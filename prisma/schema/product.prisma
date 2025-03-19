@@ -1,0 +1,27 @@
+model Shop {
+  id          Int      @id @default(autoincrement())
+  isReady     Boolean
+  productId   Int      @unique
+  alias       String   @unique
+  name        String
+  description String?
+  picture     String
+  price       Int
+  unit        String   @default("IDR")
+  unitName    String   @default("Rupiah")
+  unitSymbol  String   @default("Rp")
+}
+
+model TicketOffline {
+  id          Int      @id @default(autoincrement())
+  isReady     Boolean
+  productId   Int      @unique
+  alias       String   @unique
+  name        String
+  price       Int
+  unit        String   @default("IDR")
+  unitName    String   @default("Rupiah")
+  unitSymbol  String   @default("Rp")
+
+   transactions TicketTransaction[]
+}

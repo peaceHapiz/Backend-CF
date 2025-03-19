@@ -1,0 +1,24 @@
+[
+  {
+    "UUID": "1000",
+    "username": "hafidzAdmin",
+    "password": "adminHafidz",
+    "name": "Admin_HafidzZain",
+    "email": "hafidzzain197@gmail.com",
+    "phone": "089616260206",
+    "role": "admin",
+    "createdAt": "12312312312",
+    "verified": true
+  },
+  {
+    "id": "P-20250302-54087",
+    "name": "coba",
+    "username": "hai",
+    "email": "hai@gmail.com",
+    "password": "@AkuHafidz123",
+    "phoneNumber": "089616260206",
+    "role": "admin",
+    "createdAt": "2025-03-02T07:05:06.937Z",
+    "verified": true
+  }
+]

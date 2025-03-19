@@ -1,0 +1,10 @@
+model Session {
+  id          String    @id @default(uuid())
+  userId      String
+
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

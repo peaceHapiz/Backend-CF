@@ -1,0 +1,62 @@
+{
+    "Env": "production",
+    "Server": {
+      "port": 2024,
+      "host_local": "http://localhost",
+      "host_production": "https://chemicfest.site"
+    },
+    "RedirectUrl": {
+      "main_origin": "https://chemicfest-8.vercel.app",
+      "main_domain": "https://chemicfest.com"
+    },
+    "EmailOTP": {
+      "isProduction": true,
+      "LocalEmail": {
+        "service": "Gmail",
+        "user": "example@gmail.com",
+        "pass": "xxxx xxxx xxxx xxxx"
+      },
+      "ProductionEmail": {
+        "service": "mx3.mailspace.id",
+        "port": 465,
+        "secure": true,
+        "user": "noreply@chemicfest.com",
+        "pass": "xxxx xxxx xxxx xxxx"
+      }
+    },
+    "WhatsappOTP": {
+      "url_api": "https://wapi.tierkun.my.id/api/v1/",
+      "group_id": "xxxxxx",
+      "group_id_2": "xxxxxxx"
+    },
+    "Midtrans": {
+      "isProduction": true,
+      "Production": {
+        "MerchantID": "xxxxxxx",
+        "clientKey": "Mid-client-xxxxx",
+        "serverKey": "Mid-server-xxxxx"
+      },
+      "Sandbox": {
+        "MerchantID": "xxxxxx",
+        "clientKey": "SB-Mid-client-xxxxxx",
+        "serverKey": "SB-Mid-server-xxxxxx"
+      },
+      "Sandbox_2":{
+        "MerchantID":"xxxxxx",
+        "clientKey":"SB-Mid-client-xxxxxx",
+        "serverKey":"SB-Mid-server-xxxxxx"
+      }
+    },
+    "StreamUrl": {
+      "isOnline": true,
+      "m3u8": "https://livenow.chemicfest.site/live/p/index.m3u8",
+      "flv": "https://livenow.chemicfest.site/live/p.flv"
+    },
+    "cors": true,
+    "allowOrigin": [
+      "https://chemicfest-8.vercel.app",
+      "https://chemicfest.com",
+      "https://chemicfest.site",
+      "http://localhost:2024",
+      "http://localhost:5173"]
+  }

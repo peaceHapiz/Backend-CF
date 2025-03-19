@@ -1,0 +1,58 @@
+model TicketTransaction {
+  id              String    @id @default(uuid())
+  userId          String
+  paymentId       String?   @unique
+  paymentStatus   String    @default("pending")
+  createdAt       DateTime  @default(now())
+  
+  ticketOfflineId Int       // Menyimpan tiket offline yang dibeli
+  ticketOffline   TicketOffline @relation(fields: [ticketOfflineId], references: [id], onDelete: Cascade)
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment   Payment?  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  tickets   Ticket[]  @relation("TransactionTickets")  // 1 transaksi bisa punya banyak tiket
+}
+
+model Payment {
+  id           String   @id @default(uuid())
+  orderId      String   @unique
+  method       String
+  status       String
+  amount       Int
+  unit         String  
+  time         DateTime @default(now())
+
+  transaction  TicketTransaction?
+}
+
+model Ticket {
+  id            String       @id @default(uuid())
+  
+  transactionId String?      
+  productId     Int
+  userId        String?
+
+  bookingCode   String?
+  passCode      String?
+  ticketCode    String?
+  venue         String
+  needed        Int
+  type          String
+
+  transaction   TicketTransaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade, name: "TransactionTickets")
+  urlTicket     UrlTicket?     
+  user          User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UrlTicket {
+  id               String  @id @default(uuid())
+  ticketId         String  @unique
+  barcode          String
+  qrcode          String
+  eTicket         String
+  downloadETicket String
+  invoice         String
+  downloadInvoice String
+
+  ticket          Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}

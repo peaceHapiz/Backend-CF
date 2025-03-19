@@ -1,0 +1,24 @@
+enum Role{
+    admin
+    guru
+    pelajar
+    mahasiswa
+}
+
+model User {
+  id           String          @id @default(uuid())
+  name         String
+  username     String
+  email        String          @unique
+  password     String
+  phoneNumber  String?         @unique
+  role          Role          
+  createdAt    DateTime        @default(now())
+  verified    Boolean   @default(false)
+  ticketTransaction TicketTransaction[]
+  productTransaction    ProductTransaction[]
+  sessions     Session[]
+  otp           OTP[]
+  ticket          Ticket[]   
+  forgotPassword  Forgot[]
+}
