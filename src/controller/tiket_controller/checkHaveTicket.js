@@ -1,39 +1,58 @@
-const express = require('express')
-const router = express.Router()
-const prisma  = require('../../model/model')
+const express = require('express');
+const router = express.Router();
+const prisma  = require('../../model/model');
 
-router.post('/ticket/checkhave', async(req,res) => {
-  const {userId} = req.body
+router.post('/have-ticket', async (req, res) => {
+  const { userId } = req.body;
 
   try {
-    // Cari transaksi tiket berdasarkan userId
-    const ticketTransaction = await prisma.ticketTransaction.findFirst({
+    // ambil data tiket
+    const ticketTransactions = await prisma.ticketTransaction.findMany({
       where: {
         userId: userId,
-        payment : {
-          status : "succesful"
-        }
-        
+        paymentStatus: "successful"
       },
       include: {
-        tickets: true // Mengambil data tiket dalam transaksi
+        ticketOffline: true,
+        tickets: {
+          include: {
+            urlTicket: true 
+          }
+        }
       }
     });
 
-    // Jika transaksi ditemukan dan memiliki tiket, kembalikan true
-    if(ticketTransaction.lenght > 0){
-      return res.status(200).json({code : 200, data : ticketTransaction})
+    
+    if (!ticketTransactions || ticketTransactions.length === 0) {
+      return res.status(404).json({
+        code: 404,
+        message: "Pengguna belum memiliki tiket yang berhasil"
+      });
     }
 
-    // Jika tidak ada transaksi ata       u tiket kosong, kembalikan false
-    return res.status(404).json({code : 404, message : "Pengguna belum memiliki ticket yang berhasil"})
+    // ambil data tiket yang dimiliki
+    const transactionsData = ticketTransactions.map(transaction => ({
+      transactionId: transaction.id,
+      ticketOffline: transaction.ticketOffline, 
+      tickets: transaction.tickets, 
+      ticketUrls: transaction.tickets
+        .map(ticket => ticket.urlTicket?.eTicket) 
+        .filter(url => url) 
+    }));
+
+    return res.status(200).json({
+      code: 200,
+      message: "Pengguna memiliki tiket yang berhasil",
+      data: transactionsData
+    });
+
   } catch (error) {
     console.error("Error checking user ticket:", error);
-    return false;
+    return res.status(500).json({
+      code: 500,
+      message: "Terjadi kesalahan pada server"
+    });
   }
-})
+});
 
-
-
-
-module.exports = router
+module.exports = router;

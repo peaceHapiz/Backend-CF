@@ -5,44 +5,34 @@ const ExcelJS = require("exceljs");
 const fs = require("fs");
 const path = require("path");
 
-// Buat folder "files" jika belum ada
-const FILES_DIR = path.join(__dirname, "./file/excel");
+// Direktori penyimpanan file Excel
+const FILES_DIR = path.join(__dirname, "../../file/excel");
 if (!fs.existsSync(FILES_DIR)) {
     fs.mkdirSync(FILES_DIR, { recursive: true });
 }
 
 router.get("/export-tickets", async (req, res) => {
     try {
-        const { fileName, ticketType } = req.body; // Nama file & filter tipe tiket
-
-        if (!fileName) {
-            return res.status(400).json({ message: "❌ Nama file wajib diisi!" });
-        }
-
-        // **Ambil transaksi tiket yang sudah berhasil**
-        const whereClause = { paymentStatus: "successful" };
-        if (ticketType) whereClause.tickets = { some: { type: ticketType } };
-
+        console.log("🚀 Mengambil data transaksi sukses...");
+        
+        // Ambil semua transaksi tiket yang sukses
         const transactions = await prisma.ticketTransaction.findMany({
-            where: whereClause,
+            where: { paymentStatus: "successful" },
             include: {
                 user: true,
                 payment: true,
-                tickets: {
-                    include: { urlTicket: true }
-                }
-            }
+                tickets: { include: { urlTicket: true } },
+            },
         });
 
-        if (!transactions || transactions.length === 0) {
-            return res.status(404).json({ message: "❌ Tidak ada transaksi yang ditemukan!" });
+        if (!transactions.length) {
+            return res.status(404).json({ message: "❌ Tidak ada transaksi sukses!" });
         }
 
-        // **Buat file Excel**
+        // Buat file Excel
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Transaksi Tiket");
 
-        // **Buat header kolom**
         worksheet.columns = [
             { header: "ID Transaksi", key: "transactionId", width: 25 },
             { header: "User ID", key: "userId", width: 25 },
@@ -53,10 +43,9 @@ router.get("/export-tickets", async (req, res) => {
             { header: "Waktu Transaksi", key: "createdAt", width: 25 },
             { header: "Kode Tiket", key: "ticketCode", width: 20 },
             { header: "Tipe Tiket", key: "ticketType", width: 20 },
-            { header: "URL Tiket", key: "ticketUrl", width: 40 }
+            { header: "URL Tiket", key: "ticketUrl", width: 40 },
         ];
 
-        // **Isi data transaksi ke dalam Excel**
         transactions.forEach((transaction) => {
             transaction.tickets.forEach((ticket) => {
                 worksheet.addRow({
@@ -69,24 +58,24 @@ router.get("/export-tickets", async (req, res) => {
                     createdAt: transaction.createdAt.toISOString(),
                     ticketCode: ticket.ticketCode || "N/A",
                     ticketType: ticket.type,
-                    ticketUrl: ticket.urlTicket?.eTicket || "N/A"
+                    ticketUrl: ticket.urlTicket?.eTicket || "N/A",
                 });
             });
         });
 
-        const now = Date.now()
-        // **Simpan file Excel ke folder `/files/`**
-        const filePath = path.join(FILES_DIR, `${fileName}-${now}.xlsx`);
+        // Simpan file Excel di server
+        const filePath = path.join(FILES_DIR, "ticketsuccessful_transaction.xlsx");
         await workbook.xlsx.writeFile(filePath);
 
-        // **Kirim file untuk diunduh frontend**
-        res.download(filePath, `${fileName}.xlsx`, (err) => {
+        console.log("✅ File berhasil dibuat: ", filePath);
+        
+        // Kirim file untuk diunduh
+        res.download(filePath, "ticketsuccessful_transaction.xlsx", (err) => {
             if (err) {
                 console.error("❌ Gagal mengirim file:", err);
                 res.status(500).json({ message: "❌ Terjadi kesalahan dalam mengunduh file" });
             }
         });
-
     } catch (error) {
         console.error("❌ Error saat ekspor transaksi tiket:", error);
         res.status(500).json({ message: "❌ Terjadi kesalahan server!", error: error.message });

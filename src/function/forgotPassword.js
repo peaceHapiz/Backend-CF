@@ -1,29 +1,29 @@
 const prisma  = require('../model/model')
 
-async function forgotPasswordWatcher() {
+async function forgotPassword() {
     try {
         const now = new Date();
         const expiredForgotCode = await prisma.forgot.findMany({
             where: {
-                expiresAt: { lt: now }, 
+                expiredTime: { lt: now }, 
         }
     })
 
     if (expiredForgotCode.length === 0) {
-        console.log("✅ Tidak ada OTP yang expired.");
+        console.log("✅ Tidak ada OTP Forgot Password yang expired.");
         return;
     }
 
     const deleted = await prisma.forgot.deleteMany({
         where: {
-            expiresAt: { lt: now },
+            expiredTime: { lt: now },
         },
     });
 
-    console.log(`🗑️ ${deleted.count} OTP yang expired berhasil dihapus.`);
+    // console.log(`🗑️ ${deleted.count} OTP yang expired berhasil dihapus.`);
     } catch (error) {
         console.error('Error saat menghapus OTP Forgot Password:', error);
     }
 }
 
-module.exports = forgotPasswordWatcher()
+module.exports = forgotPassword

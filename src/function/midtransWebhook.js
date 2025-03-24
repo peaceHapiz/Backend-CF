@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 
-const MIDTRANS_SERVER_KEY = "SB-Mid-server-5ycn5sOjLN4v2SiNt0BCipcg";
+const MIDTRANS_SERVER_KEY = "SB-Mid-server-61wOUe6J09Z4E1Ox6ia72YBR";
 const midtransAuth = {
   headers: {
     Authorization:
@@ -15,26 +15,24 @@ const midtransAuth = {
   },
 };
 
-async function cekTransaksiPending() {
+async function midtransWebHook() {
   try {
-    console.log("Memulai pengecekan transaksi pending...");
+    // console.log("Memulai pengecekan transaksi pending...");
 
     const pendingTransactions = await prisma.ticketTransaction.findMany({
       where: { paymentStatus: "pending" },
-      include: { payment: true, user: true, tickets: true },
+      include: { payment: true, user: true, tickets: true, ticketOffline: true },
     });
 
-
     if (pendingTransactions.length === 0) {
-      console.log("Tidak ada transaksi pending.");
+       console.log("✅ Tidak ada transaksi pending.");
       return { message: "Tidak ada transaksi pending" };
     }
 
     let updatedTransactions = [];
-
-    for (const transaction of pendingTransactions) {
+    const requests = pendingTransactions.map(async (transaction) => {
       const orderId = transaction.payment?.orderId;
-      if (!orderId) continue;
+      if (!orderId) return;
 
       const response = await axios.get(
         `https://api.sandbox.midtrans.com/v2/${orderId}/status`,
@@ -42,21 +40,21 @@ async function cekTransaksiPending() {
       );
 
       const { transaction_status } = response.data;
+      let statusUpdate = {};
 
       if (transaction_status === "settlement" || transaction_status === "capture") {
+        statusUpdate = { paymentStatus: "successful" };
+
         await prisma.payment.update({
           where: { id: transaction.payment.id },
           data: { status: "successful" },
         });
 
-        await prisma.ticketTransaction.update({
-          where: { id: transaction.id },
-          data: { paymentStatus: "successful" },
-        });
-
         await generateTickets(transaction);
         updatedTransactions.push({ orderId, status: "successful" });
       } else if (["cancel", "deny", "expire"].includes(transaction_status)) {
+        statusUpdate = { paymentStatus: "failed" };
+
         await prisma.payment.update({
           where: { id: transaction.payment.id },
           data: { status: "failed" },
@@ -64,12 +62,20 @@ async function cekTransaksiPending() {
 
         updatedTransactions.push({ orderId, status: "failed" });
       }
-    }
 
-    console.log(`${updatedTransactions.length} transaksi berhasil diperbarui`);
+      if (Object.keys(statusUpdate).length > 0) {
+        await prisma.ticketTransaction.update({
+          where: { id: transaction.id },
+          data: statusUpdate,
+        });
+      }
+    });
+
+    await Promise.all(requests);
+     console.log(`${updatedTransactions.length} transaksi berhasil diperbarui.`);
     return { message: "Cek transaksi selesai", updatedTransactions };
   } catch (error) {
-    console.error("Error cek transaksi:", error);
+    console.error("❌ Error cek transaksi:", error);
     return { message: "Terjadi kesalahan", error };
   }
 }
@@ -77,10 +83,10 @@ async function cekTransaksiPending() {
 async function generateTickets(transaction) {
   const user = transaction.user;
   const quantity = transaction.tickets.length || 1;
-  const productId = transaction.ticket?.productId;
+  const productId = transaction.ticketOffline?.productId;
 
   if (!productId) {
-    console.error("Product ID tidak ditemukan dalam ticketOffline.");
+    console.error("❌ Product ID tidak ditemukan dalam ticketOffline.");
     return;
   }
 
@@ -122,4 +128,4 @@ async function generateTickets(transaction) {
   }
 }
 
-module.exports = cekTransaksiPending();
+module.exports = midtransWebHook;

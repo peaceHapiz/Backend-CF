@@ -7,7 +7,7 @@ const prisma = require("../../model/model");
 // Konfigurasi Midtrans
 const snap = new midtransClient.Snap({
   isProduction: false, 
-  serverKey: "SB-Mid-server-5ycn5sOjLN4v2SiNt0BCipcg",
+  serverKey: "SB-Mid-server-61wOUe6J09Z4E1Ox6ia72YBR",
 });
 
 router.post("/buy-ticket", async (req, res) => {
@@ -16,17 +16,30 @@ router.post("/buy-ticket", async (req, res) => {
     const user = await prisma.user.findFirst({
       where: { id: userId },
     });
+
+    const checkReady = await prisma.ticketOffline.findFirst({
+      where: {
+        productId: parseInt(product_Id, 10),
+      }, 
+      select: {
+        isReady: true,
+      },
+    })
+
+    if(!checkReady.isReady){
+      return res.status(400).json({ message: "Tiket belum siap" });
+    }
     
     if (!user) {
       return res.status(400).json({ message: "User tidak ditemukan" });
     }
 
-    // Validasi jumlah tiket yang dibeli
+
     if (quantity < 1 || quantity > 2) {
       return res.status(400).json({ message: "Maksimal pembelian tiket adalah 2" });
     }
 
-    // Cek total tiket yang sudah dimiliki user
+
     const userTicketsCount = await prisma.ticket.count({ where: { userId } });
 
     const kuantitas = parseInt(quantity, 10);
@@ -38,7 +51,7 @@ router.post("/buy-ticket", async (req, res) => {
 
     const productId = parseInt(product_Id, 10);
 
-    // Periksa apakah tiket tersedia di TicketOffline
+
     const ticketOffline = await prisma.ticketOffline.findUnique({
       where: { productId },
     });
@@ -49,12 +62,14 @@ router.post("/buy-ticket", async (req, res) => {
 
     // Hitung total harga
     const totalAmount = ticketOffline.price * quantity;
+    
 
-    // Simpan transaksi sebagai PENDING
     const transaction = await prisma.ticketTransaction.create({
       data: {
         userId,
         paymentStatus: "pending",
+        productId: productId,
+        ticketOfflineId: ticketOffline.id,
       },
     });
 
@@ -70,13 +85,12 @@ router.post("/buy-ticket", async (req, res) => {
       },
     });
 
-    // Update transaksi dengan paymentId
+
     await prisma.ticketTransaction.update({
       where: { id: transaction.id },
       data: { paymentId: payment.id },
     });
 
-    // Kirim ke Midtrans untuk mendapatkan URL pembayaran
     const parameter = {
       transaction_details: {
         order_id: payment.orderId,
@@ -88,12 +102,14 @@ router.post("/buy-ticket", async (req, res) => {
     };
 
     const midtransResponse = await snap.createTransaction(parameter);
+    const token = await snap.createTransactionToken(parameter)
 
     res.json({
       message: "Tiket berhasil dipesan, lanjutkan pembayaran",
       transaction,
       payment,
       midtransRedirectUrl: midtransResponse.redirect_url,
+      token : token 
     });
   
   } catch (error) {

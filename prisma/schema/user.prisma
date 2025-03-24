@@ -16,9 +16,9 @@ model User {
   createdAt    DateTime        @default(now())
   verified    Boolean   @default(false)
   ticketTransaction TicketTransaction[]
-  productTransaction    ProductTransaction[]
+
   sessions     Session[]
   otp           OTP[]
   ticket          Ticket[]   
-  forgotPassword  Forgot[]
+  forgotPassword  Forgot?
 }

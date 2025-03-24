@@ -3,10 +3,10 @@ async function sessionWatcher() {
     try {
       const now = new Date();
   
-      // 🔹 Cari sesi yang sudah expired
+     
       const expiredSessions = await prisma.session.findMany({
         where: {
-          expiresAt: { lt: now }, // lt = less than (kurang dari waktu sekarang)
+          expiresAt: { lt: now }, 
         },
       });
   
@@ -22,10 +22,10 @@ async function sessionWatcher() {
         },
       });
   
-      console.log(`🗑️ ${deleted.count} sesi yang expired berhasil dihapus.`);
+      // console.log(`🗑️ ${deleted.count} sesi yang expired berhasil dihapus.`);
     } catch (error) {
       console.error("❌ Error saat menghapus sesi expired:", error);
     }
   }
 
-  module.exports = sessionWatcher()
+  module.exports = sessionWatcher

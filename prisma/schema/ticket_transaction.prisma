@@ -3,6 +3,7 @@ model TicketTransaction {
   userId          String
   paymentId       String?   @unique
   paymentStatus   String    @default("pending")
+  productId     Int
   createdAt       DateTime  @default(now())
   
   ticketOfflineId Int       // Menyimpan tiket offline yang dibeli

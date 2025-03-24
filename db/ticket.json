@@ -1,0 +1,35 @@
+[
+    {
+        "id": 1,
+        "isReady": true,
+        "productId": 1,
+        "alias": "Early Bird",
+        "name": "Tiket Early Bird",
+        "price": 45000,
+        "unit": "IDR",
+        "unitName": "Rupiah",
+        "unitSymbol": "Rp"
+    },
+    {
+        "id": 2,
+        "isReady": true,
+        "productId": 2,
+        "alias": "Regular",
+        "name": "Tiket Regular",
+        "price": 50000,
+        "unit": "IDR",
+        "unitName": "Rupiah",
+        "unitSymbol": "Rp"
+    },
+    {
+        "id": 3,
+        "isReady": true,
+        "productId": 3,
+        "alias": "OTS",
+        "name": "Tiket OTS",
+        "price": 60000,
+        "unit": "IDR",
+        "unitName": "Rupiah",
+        "unitSymbol": "Rp"
+    }
+]

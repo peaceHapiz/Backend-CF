@@ -6,7 +6,7 @@ async function otpWatcher() {
       // 🔹 Cari OTP yang sudah expired
       const expiredOTPs = await prisma.oTP.findMany({
         where: {
-          expiresAt: { lt: now }, // lt = less than (kurang dari waktu sekarang)
+          expiresAt: { lt: now }, 
         },
       });
   
@@ -15,17 +15,17 @@ async function otpWatcher() {
         return;
       }
   
-      // 🔹 Hapus semua OTP yang expired
+      
       const deleted = await prisma.oTP.deleteMany({
         where: {
           expiresAt: { lt: now },
         },
       });
   
-      console.log(`🗑️ ${deleted.count} OTP yang expired berhasil dihapus.`);
+      // console.log(`🗑️ ${deleted.count} OTP yang expired berhasil dihapus.`);
     } catch (error) {
       console.error("❌ Error saat menghapus OTP expired:", error);
     }
   }
 
-  module.exports = otpWatcher()
+  module.exports = otpWatcher

@@ -1,12 +1,19 @@
 const express = require('express')
+const prisma  = require('../../model/model')
 const router = express.Router()
 
 router.post("/validation/verifyotp", async (req, res) => {
     const { users, otp } = req.body;
   
-    if (!users || !otp) {
-      return res.status(400).json({ code: 400, message: "Data tidak valid" });
+    if(!users){
+      return res.status(400).json({ code: 400, message: "Masukkan Users" });
     }
+
+    if(!otp){
+      return res.status(400).json({ code: 400, message: "Masukkan OTP" });
+    }
+
+    const otpString = otp.toString();
   
     let method;
     if (users.match(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/)) {
@@ -18,7 +25,7 @@ router.post("/validation/verifyotp", async (req, res) => {
     }
   
     try {
-      // Cari user berdasarkan email atau phone
+
       const user = await prisma.user.findFirst({
         where: method === "email" ? { email: users } : { phone: users },
       });
@@ -27,13 +34,10 @@ router.post("/validation/verifyotp", async (req, res) => {
         return res.status(404).json({ code: 404, message: "User tidak ditemukan" });
       }
   
-      // Cari OTP yang masih aktif
+
       const otpRecord = await prisma.oTP.findFirst({
         where: {
           userId: user.id,
-          code: otp,
-          method: method,
-          isUsed: false,
           expiresAt: { gt: new Date() },
         },
       });
@@ -41,16 +45,34 @@ router.post("/validation/verifyotp", async (req, res) => {
       if (!otpRecord) {
         return res.status(400).json({ code: 400, message: "OTP tidak valid atau sudah expired" });
       }
+      console.log(otpRecord.code);
+      if (otpRecord.code !== otpString) {
+        return res.status(400).json({ code: 400, message: "OTP tidak valid" });
+      }
+      if(otpRecord.otpStatus === false){
+        return res.status(400).json({ code: 400, message: "OTP sudah digunakan" });
+      }
   
       // Tandai OTP sebagai sudah digunakan
-      await prisma.oTP.update({
+
+      const userUpdate = await prisma.user.update({
+        where: { id: user.id },
+        data: { verified: true },
+      });
+
+      const otpUpdate = await prisma.oTP.update({
         where: { id: otpRecord.id },
-        data: { isUsed: true },
+        data: { otpStatus: false },
       });
   
       res.status(200).json({
         code: 200,
         message: "OTP berhasil diverifikasi",
+        data : {
+          username : userUpdate.username,
+          verified : userUpdate.verified,
+          otpStatus : otpUpdate.otpStatus
+        }
       });
     } catch (error) {
       console.error(error);

@@ -3,9 +3,9 @@ const router = express.Router()
 const prisma = require('../../model/model')
 
 router.post('/logout', async (req,res) => {
+  const {sessionId} = req.body
 
     try {
-        const {sessionId} = req.body
         if (!sessionId) {
             return res.status(400).json({ code: 400, message: "Session ID is required" });
           }

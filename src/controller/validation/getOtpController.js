@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const prisma = require("../../model/model"); // Sesuaikan dengan path model Prisma
+const prisma = require("../../model/model");
 const nodemailer = require("nodemailer");
 
 // Fungsi untuk membuat OTP
@@ -10,22 +10,29 @@ function generateOTP() {
 
 // Fungsi untuk mengirim OTP via email
 async function sendEmail(email, name, otp) {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: "your-email@gmail.com",
-      pass: "your-email-password",
-    },
-  });
+  try {
+    let transporter = nodemailer.createTransport({
+      host: "mx5.mailspace.id",
+      port: 465,
+      secure: true,
+      auth: {
+        user: "noreply@lockify.space",
+        pass: "@Sandiku197",
+      },
+    });
 
-  const mailOptions = {
-    from: "your-email@gmail.com",
-    to: email,
-    subject: "Kode OTP Chemicfest",
-    text: `Halo ${name},\n\nKode OTP kamu adalah: ${otp}\nKode ini berlaku selama 5 menit.\n\nJangan bagikan kode ini kepada siapa pun.`,
-  };
+    const mailOptions = {
+      from: "noreply@lockify.space",
+      to: email,
+      subject: "Kode OTP Chemicfest#8",
+      text: `Halo ${name},\n\nKode OTP kamu adalah: ${otp}\nKode ini berlaku selama 5 menit.\n\nJangan bagikan kode ini kepada siapa pun.`,
+    };
 
-  return transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Gagal mengirim email:", error);
+    throw new Error("Gagal mengirim OTP, coba lagi nanti");
+  }
 }
 
 // Endpoint untuk request OTP
@@ -37,60 +44,53 @@ router.post("/validation/getotp", async (req, res) => {
   }
 
   let method;
-  if (users.match(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/)) {
+  if (/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(users)) {
     method = "email";
-  } else if (users.match(/^[0-9]+$/) && users.length > 9) {
-    method = "phone";
+  } else if (/^[0-9]+$/.test(users) && users.length > 9) {
+    method = "phoneNumber";
   } else {
-    return res.status(400).json({ code: 400, message: "Data tidak valid" });
+    method = "username";
   }
 
   try {
-    // Cari user berdasarkan email atau phone
+
     const user = await prisma.user.findFirst({
-      where: method === "email" ? { email: users } : { phone: users },
+      where: { [method]: users },
     });
 
     if (!user) {
       return res.status(404).json({ code: 404, message: "User tidak ditemukan" });
     }
 
-    // Hapus OTP lama yang sudah expired
+    // Hapus OTP yang sudah expired
     await prisma.oTP.deleteMany({
-      where: { userId: user.id, expiresAt: { lt: new Date() } },
+      where: { userId: user.id },
     });
 
-    // Buat OTP baru
-    const otpCode = generateOTP();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit dari sekarang
+  
 
-    // Simpan OTP ke database
+  
+    const otpCode = generateOTP();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
+
+    await sendEmail(user.email, user.name, otpCode);
+
     await prisma.oTP.create({
       data: {
         userId: user.id,
         code: otpCode,
-        method: method,
-        expiresAt: expiresAt,
+        expiresAt,
+        otpStatus: true
       },
     });
 
-    // Kirim OTP sesuai metode
-    if (method === "email") {
-      await sendEmail(user.email, user.username, otpCode);
-    } else {
-      console.log(`Kirim OTP ke WhatsApp: ${user.phone}, Kode: ${otpCode}`);
-    }
 
-    res.status(200).json({
-      code: 200,
-      message: "OTP berhasil dikirim",
-    });
+
+    res.status(200).json({ code: 200, message: "OTP berhasil dikirim" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ code: 500, message: "Terjadi kesalahan server" });
+    res.status(500).json({ code: 500, message: error.message || "Terjadi kesalahan server" });
   }
 });
-
-
 
 module.exports = router;

@@ -1,200 +1,167 @@
- const express = require('express')
- const prisma = require('../../model/model')
- const router = express.Router()
-const axios = require('axios')
-const nodemailer = require('nodemailer')
-const { Role } = require('@prisma/client')
+const express = require("express");
+const prisma = require("../../model/model");
+const router = express.Router();
+const nodemailer = require("nodemailer");
+const { Role } = require("@prisma/client");
 
-
+// Fungsi untuk membuat ID unik berdasarkan role dan tanggal pendaftaran
 function generateRandomId(role, registrationDate) {
-    let result = "";
-    const characters = "1234567890";
-    const charactersLength = characters.length;
-  
-    // Format tanggal pendaftaran (YYYYMMDD)
-    const date = new Date(registrationDate);
-    const formattedDate = date.getFullYear().toString() +
-                          String(date.getMonth() + 1).padStart(2, "0") +
-                          String(date.getDate()).padStart(2, "0");
-  
-    // Generate angka acak sebanyak 5 digit
-    for (let i = 0; i < 5; i++) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-  
-    // Pastikan angka tidak dimulai dari 0
-    if (result.startsWith("0")) {
-      result = result.replace("0", "1");
-    }
-  
-    // Format sesuai role
-    if (role.toLowerCase() === "pelajar") {
-      return `P-${formattedDate}-${result}`;
-    } else if (role.toLowerCase() === "guru"){
-      return `G-${formattedDate}-${result}`; // Format default untuk role lain
-    } else if (role.toLowerCase() === "mahasiswa"){
-        return `M-${formattedDate}-${result}`; // Format default untuk role lain
-    }
+  let result = "";
+  const characters = "1234567890";
+  const charactersLength = characters.length;
+
+  const date = new Date(registrationDate);
+  const formattedDate =
+    date.getFullYear().toString() +
+    String(date.getMonth() + 1).padStart(2, "0") +
+    String(date.getDate()).padStart(2, "0");
+
+  for (let i = 0; i < 5; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
-  
 
-  
-router.post('/register', async(req,res) => {
-    const {name, username,email, password, checkpassword, phoneNumber, role } = req.body
+  if (result.startsWith("0")) {
+    result = result.replace("0", "1");
+  }
 
-    if (
-        role !== "guru" &&
-        role !== "pelajar" &&
-        role !== "mahasiswa"
-    ){
-        return res.status(422).json({code : 422, message: "invalid role"})
-    }
+  switch (role.toLowerCase()) {
+    case "pelajar":
+      return `P-${formattedDate}-${result}`;
+    case "guru":
+      return `G-${formattedDate}-${result}`;
+    case "mahasiswa":
+      return `M-${formattedDate}-${result}`;
+    default:
+      throw new Error("Role tidak valid");
+  }
+}
 
-    if(!name) {
-        return res
-          .status(422)
-          .json({ code: 422, message: "Please fill all the fields, need parameter (name)" });
-    }
+// Fungsi untuk mengirim email OTP
+async function sendEmail(email, name, otp) {
+  try {
+    let transporter = nodemailer.createTransport({
+      host: "mx5.mailspace.id",
+      port: 465,
+      secure: true,
+      auth: {
+        user: "noreply@lockify.space",
+        pass: "@Sandiku197",
+      },
+    });
 
-    if (!username) {
-        return res
-          .status(422)
-          .json({ code: 422, message: "Please fill all the fields, need parameter (username)" });
-    }
+    const mailOptions = {
+      from: "noreply@lockify.space",
+      to: email,
+      subject: "Kode OTP Chemicfest#8",
+      text: `Halo ${name},\n\nKode OTP kamu adalah: ${otp}\nKode ini berlaku selama 5 menit.\n\nJangan bagikan kode ini kepada siapa pun.`,
+    };
 
-    if (!email) {
-        return res
-          .status(422)
-          .json({ code: 422, message: "Please fill all the fields, need parameter (email)" });
-    } 
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Gagal mengirim email:", error);
+    throw new Error("Gagal mengirim OTP, coba lagi nanti");
+  }
+}
 
-    if (!phoneNumber) {
-        return res
-          .status(422)
-          .json({ code: 422, message: "Please fill all the fields, need parameter (phone)" });
-    }
+// Fungsi untuk membuat OTP
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-    if (!password) {
-        return res
-          .status(422)
-          .json({ code: 422, message: "Please fill all the fields, need parameter (password)" });
-    }
+// Endpoint registrasi
+router.post("/register", async (req, res) => {
+  const { name, username, email, password, checkpassword, phoneNumber, role } =
+    req.body;
 
-    if (!checkpassword) {
-        return res
-          .status(422)
-          .json({ code: 422, message: "Please fill all the fields, need parameter (repassword)" });
-    }
+  // Validasi role
+  if (!Object.values(Role).includes(role)) {
+    return res.status(422).json({ code: 422, message: "Invalid role" });
+  }
 
-    if (!role) {
-        return res
-          .status(422)
-          .json({ code: 422, message: "Please fill all the fields, need parameter (role)" });
-    }
+  // Validasi input
+  if (!name || !username || !email || !phoneNumber || !password || !checkpassword || !role) {
+    return res.status(422).json({ code: 422, message: "Please fill all fields" });
+  }
 
-    const User = await prisma.user.findFirst({
-        where: { username: username },
-      });
-    
-    const Email = await prisma.user.findUnique({
-        where : {email : email}
-    })
+  // Cek apakah email, username, atau phoneNumber sudah digunakan
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { username: username },
+        { email: email },
+        { phoneNumber: phoneNumber },
+      ],
+    },
+  });
 
-    const Phone  = await prisma.user.findFirst({
-        where : {phoneNumber : phoneNumber}
-    })
+  if (existingUser) {
+    return res.status(420).json({ code: 420, message: "User already exists" });
+  }
 
-    if (User){
-        return res
-        .status(420)
-        .json({code : 420, message : "Username sudah terdaftar"})
-    }
-    if (Email){
-        return res
-        .status(420)
-        .json({code : 420, message : "Email sudah terdaftar"})
-    }
-    if (Phone){
-        return res
-        .status(420)
-        .json({code : 420, message : "Phone sudah terdaftar"})
-    }
+  // Validasi password
+  if (password.length < 8) {
+    return res.status(426).json({ code: 426, message: "Password must be at least 8 characters" });
+  }
+  if (!password.match(/[a-z]/)) {
+    return res.status(427).json({ code: 427, message: "Password must contain at least one lowercase letter" });
+  }
+  if (!password.match(/[A-Z]/)) {
+    return res.status(428).json({ code: 428, message: "Password must contain at least one uppercase letter" });
+  }
+  if (!password.match(/[0-9]/)) {
+    return res.status(429).json({ code: 429, message: "Password must contain at least one number" });
+  }
+  if (password !== checkpassword) {
+    return res.status(430).json({ code: 430, message: "Passwords do not match" });
+  }
 
-    if (password.length < 8) {
-        return res
-          .status(426)
-          .json({ code: 426, message: "Password must be at least 8 characters" });
-    }
+  if (!email.match(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/)) {
+    return res.status(431).json({ code: 431, message: "Invalid email address" });
+  }
 
-    if (!password.match(/[a-z]/g)) {
-        return res.status(427).json({
-          code: 427,
-          message: "Password must contain at least one lowercase letter",
-        });
-    }
+  const now = new Date();
+  const userId = generateRandomId(role, now);
 
-    if (!password.match(/[A-Z]/g)) {
-        return res.status(428).json({
-          code: 428,
-          message: "Password must contain at least one uppercase letter",
-        });
-    }
+  const expiresOtp = new Date(now);
+  expiresOtp.setMinutes(now.getMinutes() + 5); // Perbaikan set waktu OTP
 
-    if (!password.match(/[0-9]/g)) {
-        return res.status(429).json({
-          code: 429,
-          message: "Password must contain at least one number",
-        });
-    }
+  const otpCode = generateOTP();
 
-    if (password !== checkpassword) {
-        return res
-          .status(433)
-          .json({ code: 430, message: "Password not match" });
-    }
-
-    if (!email.match(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/)) {
-        return res
-          .status(430)
-          .json({ code: 430, message: "Invalid email address" });
-    }
-    
-    const now = new Date()
-    const UUID = generateRandomId(role,now)
-
-
-
-    const expiresOtp = new Date(now);
-    expiresOtp.setDate(now.getMinutes() + 5);
-
-    function generateOTP() {
-        return Math.floor(100000 + Math.random() * 900000).toString();
-      }
-    
+  try {
+    // Simpan user dan OTP ke database
     const insertUser = await prisma.user.create({
-        data : {
-            id :UUID,
-            name : name,
-            username : username,
-            email : email,
-            password : password,
-            phoneNumber : phoneNumber,
-            role : role,
-            createdAt : now,
-            verified : false,
-            otp : {
-                create : {
-                    code :  generateOTP(),
-                    expiresAt : expiresOtp,
-                    createdAt : now
-                }
-            }
-        }
-    })
+      data: {
+        id: userId,
+        name: name,
+        username: username,
+        email: email,
+        password: password, // Harus di-hash dalam implementasi nyata!
+        phoneNumber: phoneNumber,
+        role: role,
+        createdAt: now,
+        verified: false,
+        otp: {
+          create: {
+            code: otpCode,
+            expiresAt: expiresOtp,
+            createdAt: now,
+            otpStatus: true
+          },
+        },
+      },
+      include: {
+        otp: true, // Supaya OTP bisa langsung diakses setelah insert
+      },
+    });
 
+    // Kirim email OTP
+    await sendEmail(insertUser.email, insertUser.name, otpCode);
+    console.log(`${otpCode}, ${insertUser.email}, ${insertUser.name}`);
+    res.status(200).json({ code: 200, message: "Register successful and OTP sent", data: insertUser });
+  } catch (error) {
+    console.error("Error saat registrasi:", error);
+    res.status(500).json({ code: 500, message: "Terjadi kesalahan server" });
+  }
+});
 
-    res.status(200).json({code : 200, message : "Register Succesfull", data: insertUser})
-})
-
-module.exports = router
-  
+module.exports = router;
