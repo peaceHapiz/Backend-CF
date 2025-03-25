@@ -4,14 +4,14 @@ const prisma  = require('../../src/model/model')
 
 async function generateProductId() {
     try {
-        // Cari produk dengan ID tertinggi
-        const lastProduct = await prisma.productDetail.findFirst({
+
+        const lastProduct = await prisma.ticketOffline.findFirst({
             orderBy: {
-                productId: 'desc'  // Urutkan dari yang terbesar
+                productId: 'desc'  
             }
         });
 
-        // Jika belum ada produk, mulai dari 1000
+
         const newProductId = lastProduct ? lastProduct.productId + 1 : 1000;
 
         return newProductId;
