@@ -48,6 +48,8 @@ const deleteSponsor = require('./admin/sponsor/deleteSponsor')
 const updateTicket = require('./admin/ticket/updateTicket')
 const deleteTicket = require('./admin/ticket/deleteTicket')
 const addTicket = require('./admin/ticket/addTicket')
+const getAllTicket = require('./admin/ticket/get-all-ticket')
+const manualScanned = require('./admin/ticket/manualScanned.js')
 
 //Request Data
 const getExcel = require('./admin/requestData/excelTicket.js')
@@ -66,7 +68,7 @@ const verifyForgotPassword = require('./src/controller/user_controller/verifyFor
 const buyTicket = require('./src/controller/tiket_controller/buyTicket')
 const checkTicket = require('./src/controller/tiket_controller/checkHaveTicket.js')
 const getTicket = require('./src/controller/tiket_controller/getTiket.js')
-
+const downloadInvoice = require('./src/controller/tiket_controller/dowload-invoice.js')
 
 
 
@@ -125,6 +127,8 @@ app.use('/api/admin/tiket', addTicket)
 app.use('/api/admin/tiket', updateTicket)
 app.use('/api/admin/tiket', deleteTicket)
 app.use('/api/admin/tiket', getExcel)
+app.use('/api/admin/tiket', getAllTicket)
+app.use('/api/admin/tiket', manualScanned)
 
 
 //User Routes
@@ -141,12 +145,14 @@ app.use('/api', verifyForgotPassword)
 app.use('/api', buyTicket)
 app.use('/api', checkTicket)
 app.use('/api', getTicket)
+app.use('/api', downloadInvoice)
 
 
 //------------------------Server-----------------------//
 app.listen(port, async() => {
     console.log(`===============[SERVER IS RUNNING NOW]===============`);
     console.log(`❍ Port: ${port}`);
+    console.log(`❍ Url: http://${myIpPrivate}:${port}`);
     try {
         const publicIp = await getIpPublic();
         console.log(`❍ Ip Public: ${publicIp}`);

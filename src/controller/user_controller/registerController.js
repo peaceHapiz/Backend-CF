@@ -123,19 +123,19 @@ router.post("/register", async (req, res) => {
   const userId = generateRandomId(role, now);
 
   const expiresOtp = new Date(now);
-  expiresOtp.setMinutes(now.getMinutes() + 5); // Perbaikan set waktu OTP
+  expiresOtp.setMinutes(now.getMinutes() + 5); 
 
   const otpCode = generateOTP();
 
   try {
-    // Simpan user dan OTP ke database
+ 
     const insertUser = await prisma.user.create({
       data: {
         id: userId,
         name: name,
         username: username,
         email: email,
-        password: password, // Harus di-hash dalam implementasi nyata!
+        password: password, 
         phoneNumber: phoneNumber,
         role: role,
         createdAt: now,
@@ -150,7 +150,7 @@ router.post("/register", async (req, res) => {
         },
       },
       include: {
-        otp: true, // Supaya OTP bisa langsung diakses setelah insert
+        otp: true, 
       },
     });
 

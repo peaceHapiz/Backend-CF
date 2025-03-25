@@ -33,12 +33,13 @@ model Ticket {
   productId     Int
   userId        String?
 
-  bookingCode   String?
-  passCode      String?
+  bookingCode   String?   @unique
+  passCode      String? @unique
   ticketCode    String?
   venue         String
   needed        Int
   type          String
+  isScanned     Boolean @default(false)
 
   transaction   TicketTransaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade, name: "TransactionTickets")
   urlTicket     UrlTicket?     
@@ -48,7 +49,7 @@ model Ticket {
 model UrlTicket {
   id               String  @id @default(uuid())
   ticketId         String  @unique
-  barcode          String
+  barcode          String   @unique
   qrcode          String
   eTicket         String
   downloadETicket String

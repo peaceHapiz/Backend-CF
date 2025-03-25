@@ -2,7 +2,7 @@ const prisma  = require('../../model/model')
 const express = require('express')
 const router = express.Router()
 
-router.post('/ticket/status', async(req,res) => {
+router.post('/ticket-status', async(req,res) => {
   const {ticketId, newStatus}  = req.body
 
   try {
