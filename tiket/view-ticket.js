@@ -8,9 +8,7 @@ const pdfDirectory = path.join(__dirname, '../file/eticket'); // Folder penyimpa
 router.get('/:ticketUrl', async (req, res) => {
     try {
         const { ticketUrl } = req.params;
-
-        // Gunakan ticketUrl sebagai nama file PDF
-        const pdfFileName = `${ticketUrl}.png`;
+        const pdfFileName = `${ticketUrl}.pdf`;
         const pdfPath = path.join(pdfDirectory, pdfFileName);
 
         // Periksa apakah file PDF ada
@@ -18,7 +16,8 @@ router.get('/:ticketUrl', async (req, res) => {
             return res.status(404).json({ code: 404, message: "PDF file not found" });
         }
 
-        // Kirim file PDF ke browser
+        // Atur header agar PDF bisa dilihat di browser
+        console.log(pdfPath)
         res.sendFile(pdfPath);
 
     } catch (error) {

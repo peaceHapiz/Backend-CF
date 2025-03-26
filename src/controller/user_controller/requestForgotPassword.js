@@ -24,32 +24,23 @@ async function sendEmail(email, name, otpCode) {
     to: email,
     subject: 'Reset Password Chemicfest#8',
     html: `
-    <head>
-      <title>Reset Password</title>
-      <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-      <meta content="width=device-width" name="viewport">
-    </head>
-    <body style="background-color: #f4f4f5; text-align: center; font-family: Arial, sans-serif;">
-      <table cellpadding="0" cellspacing="0" width="100%" style="background-color: #fff; max-width: 600px; margin: auto; padding: 20px;">
-        <tr>
-          <td style="font-size: 20px; font-weight: bold; padding-bottom: 10px;">Halo, ${name}</td>
-        </tr>
-        <tr>
-          <td style="font-size: 16px; color: #555;">Gunakan kode OTP berikut untuk mengatur ulang password Anda:</td>
-        </tr>
-        <tr>
-          <td style="font-size: 24px; font-weight: bold; color: #F39829; padding: 20px 0;">${otpCode.toUpperCase()}</td>
-        </tr>
-        <tr>
-          <td style="font-size: 14px; color: #777;">Kode ini berlaku selama 5 menit.</td>
-        </tr>
-        <tr>
-          <td style="padding-top: 20px;">
-            <a href="http://localhost:3000/" style="display: inline-block; padding: 12px 24px; background-color: #F39829; color: #fff; text-decoration: none; border-radius: 5px; font-size: 16px;">Reset Password</a>
-          </td>
-        </tr>
-      </table>
-    </body>
+    <!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset Password OTP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-200 flex justify-center items-center min-h-screen">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
+      <h2 class="text-2xl font-bold text-red-600">Reset Password</h2>
+      <p class="mt-2 text-gray-700">Gunakan kode berikut untuk mereset password Anda:</p>
+      <h1 class="mt-4 text-4xl font-bold text-gray-900">${otpCode}</h1>
+      <p class="mt-2 text-sm text-gray-500">Kode ini hanya berlaku selama 5 menit.</p>
+    </div>
+  </body>
+</html>
     `
   };
 

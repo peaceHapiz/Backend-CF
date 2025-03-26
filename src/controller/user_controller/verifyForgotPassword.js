@@ -10,29 +10,44 @@ const configPath = path.join(__dirname, '../../../db/config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 async function sendEmail(email) {
-  // const transporter = nodemailer.createTransport({
-  //   host: config.EmailOTP.ProductionEmail.service,
-  //   port: config.EmailOTP.ProductionEmail.port,
-  //   secure: config.EmailOTP.ProductionEmail.secure,
-  //   auth: {
-  //     user: config.EmailOTP.ProductionEmail.user,
-  //     pass: config.EmailOTP.ProductionEmail.pass,
-  //   },
-  //   debug: true,
-  // });
-
-  let transporter = nodemailer.createTransport({
-    service: "gmail",
+  const transporter = nodemailer.createTransport({
+    host: config.EmailOTP.ProductionEmail.service,
+    port: config.EmailOTP.ProductionEmail.port,
+    secure: config.EmailOTP.ProductionEmail.secure,
     auth: {
-      user: "penjualkelpshake@gmail.com",
-      pass: "hizm cxcw fsiq smxr",
+      user: config.EmailOTP.ProductionEmail.user,
+      pass: config.EmailOTP.ProductionEmail.pass,
     },
-});
+    debug: true,
+  });
+
+  // let transporter = nodemailer.createTransport({
+  //   service: "gmail",
+  //   auth: {
+  //     user: "penjualkelpshake@gmail.com",
+  //     pass: "hizm cxcw fsiq smxr",
+  //   },
+// });
   const mailOptions = {
     from: config.EmailOTP.ProductionEmail.user,
     to: email,
-    subject: "Reset Password Chemicfest#8",
-    html: `<p>Your password has been reset successfully.</p>`
+    subject: "Reset Password Chemicfest#9",
+    html: `<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset Password Berhasil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-200 flex justify-center items-center min-h-screen">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
+      <h2 class="text-2xl font-bold text-green-600">Password Berhasil Direset</h2>
+      <p class="mt-2 text-gray-700">Password Anda telah berhasil diubah.</p>
+      <p class="mt-2 text-sm text-gray-500">Jika ini bukan Anda, segera hubungi tim support kami.</p>
+    </div>
+  </body>
+</html>`
   };
 
   return transporter.sendMail(mailOptions);

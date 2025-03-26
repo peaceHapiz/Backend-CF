@@ -12,7 +12,7 @@ const PDFDocument = require('pdfkit');
 const configPath = path.join(__dirname, '../../db/config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-const MIDTRANS_SERVER_KEY = "SB-Mid-server-5ycn5sOjLN4v2SiNt0BCipcg";
+const MIDTRANS_SERVER_KEY = "Mid-server-ahXKr58ypEHFgnpe6c95jFTk";
 const midtransAuth = {
   headers: {
     Authorization:
@@ -23,7 +23,8 @@ const midtransAuth = {
 
 
 
-const {generateInvoice} = require('../controller/tiket_controller/invoice-controller.js')
+const {generateInvoice} = require('../controller/tiket_controller/invoice-controller.js');
+const barcode = require("barcode");
 
 
 
@@ -66,7 +67,7 @@ async function midtransWebHook() {
       }
       
       const response = await axios.get(
-        `https://api.sandbox.midtrans.com/v2/${orderId}/status`,
+        `https://api.midtrans.com/v2/${orderId}/status`,
         midtransAuth
       );
       
@@ -76,23 +77,27 @@ async function midtransWebHook() {
       if (transaction_status === "settlement" || transaction_status === "capture") {
         statusUpdate = { paymentStatus: "successful", checked: true };
         
-        await prisma.payment.update({
+          await prisma.payment.update({
           where: { id: transaction.payment.id },
           data: { status: "successful" },
         });
-
+        const uniqueCode = Math.floor(10000 + Math.random() * 90000);
+        const urlTicket = `T-${transaction.user.id}-${uniqueCode}`;
+        console.log(`urlTicket: ${urlTicket}`);
+        const order_id = transaction.payment.orderId;
+        const amount = transaction.payment.amount;
 
         
-        await generateQR(transaction);
-        await generateEticket(transaction);
-        await sendEmail(transaction);
-
+        await generateQR(transaction, urlTicket);
         await prisma.ticketTransaction.update({
           where: { id: transaction.id },
           data: { checked: true,
             paymentStatus: "successful",
            },
         });
+        await generateEticket(transaction, urlTicket, order_id, amount);
+        await sendEmail(transaction);
+
 
         updatedTransactions.push({ orderId, status: "successful" });
         console.log(`✅ Transaksi ${orderId} berhasil, QR & e-Ticket dibuat.`);
@@ -124,7 +129,7 @@ async function midtransWebHook() {
 }
 
 
-async function generateQR(transaction) {
+async function generateQR(transaction, urlTicket) {
   const user = transaction.user;
   const quantity = transaction.tickets.length || 1;
   const productId = transaction.ticketOffline?.productId;
@@ -149,8 +154,8 @@ async function generateQR(transaction) {
       }
     })
 
-    const uniqueCode = Math.floor(10000 + Math.random() * 90000);
-    const urlTicket = `T-${transaction.user.id}-${uniqueCode}`;
+    
+    
     const qrFilePath = path.join(uploadDir, `${urlTicket}.png`);
     const qrUrl = `https://etiket.chemicfest9.site/qrcode/${urlTicket}.png`;
     
@@ -165,13 +170,13 @@ async function generateQR(transaction) {
     inlineImages.push(`<img src="cid:${cid}" alt="QR Code" />`);
   }
 
-  // ✅ Coba kirim email dulu sebelum menyimpan tiket ke database
+  
   const emailSent = await sendEmail(user.email, attachments, inlineImages, transaction.payment.orderId);
   
   if (emailSent) {
     for (let i = 0; i < quantity; i++) {
       const uniqueCode = Math.floor(10000 + Math.random() * 90000);
-      const urlTicket = `T-${Date.now()}-${uuidv4().slice(0, 5)}-${uniqueCode}`;
+      
       const qrUrl = `https://etiket.chemicfest9.site/qrcode/${urlTicket}.png`;
 
       const ticket = await prisma.ticket.create({
@@ -207,43 +212,53 @@ async function generateQR(transaction) {
 }
 
 async function sendEmail(to, attachments, inlineImages, orderId) {
-  // const transporter = nodemailer.createTransport({
-  //     host: config.EmailOTP.ProductionEmail.service,
-  //     port: config.EmailOTP.ProductionEmail.port,
-  //     secure: config.EmailOTP.ProductionEmail.secure,
-  //     auth: {
-  //       user: config.EmailOTP.ProductionEmail.user,
-  //       pass: config.EmailOTP.ProductionEmail.pass,
-  //     },
-  //     debug: true,
-  //   });
-  let transporter = nodemailer.createTransport({
-          host: "mx5.mailspace.id",
-          port: 465,
-          secure: true,
-          auth: {
-            user: "noreply@lockify.space",
-            pass: "@Sandiku197",
-          },
-        });
+  const transporter = nodemailer.createTransport({
+      host: config.EmailOTP.ProductionEmail.service,
+      port: config.EmailOTP.ProductionEmail.port,
+      secure: config.EmailOTP.ProductionEmail.secure,
+      auth: {
+        user: config.EmailOTP.ProductionEmail.user,
+        pass: config.EmailOTP.ProductionEmail.pass,
+      },
+      debug: true,
+    });
+  // let transporter = nodemailer.createTransport({
+  //         host: "mx5.mailspace.id",
+  //         port: 465,
+  //         secure: true,
+  //         auth: {
+  //           user: "noreply@lockify.space",
+  //           pass: "@Sandiku197",
+  //         },
+  //       });
   const mailOptions = {
     from: '"Chemicfest" <noreply@lockify.space>',
     to: to,
     subject: "E-Ticket Chemicfest Anda",
     html: `
-      <h2>Terima kasih telah membeli tiket Chemicfest!</h2>
-      <p>Berikut adalah tiket Anda:</p>
-      ${inlineImages.join("<br>")}
-      <p>Anda juga dapat mengunduh invoice di sini: 
-        <a href="https://invoice.chemicfest.site/download/${orderId}">Download Invoice</a>
-      </p>
+      <!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E-Ticket</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-200 flex justify-center items-center min-h-screen">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
+      <h2 class="text-2xl font-bold text-blue-600">E-Ticket Pembelian</h2>
+      <p class="mt-2 text-gray-700">Berikut adalah E-Ticket pembelian Anda.</p>
+      <a class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded-md" href="https://eticket.chemicfest.site/download/${orderId}" >Download E-Ticket</a>
+    </div>
+  </body>
+</html>
     `,
     attachments: attachments,
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("✅ Email berhasil dikirim ke:", to);
+    console.log("✅ Email E-Tickeberhasil dikirim ke:", to);
     return true;  // ✅ Berhasil, lanjut buat tiket
   } catch (error) {
     console.error("❌ Gagal mengirim email:", error);
@@ -251,11 +266,12 @@ async function sendEmail(to, attachments, inlineImages, orderId) {
   }
 }
 
-async function generateEticket(transaction) {
+async function generateEticket(transaction, urlTicket, order_id, amount) {
   const user = transaction.user;
   const quantity = transaction.tickets.length || 1;
   const productId = transaction.ticketOffline?.productId;
-  const ticketId = transaction.id; // Asumsi: ticketId = barcode
+  
+  console.log(`Barcode :`,urlTicket)
 
   try {
     if (!productId) {
@@ -268,41 +284,52 @@ async function generateEticket(transaction) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    const qrPath = path.join(__dirname, `../../file/qrcode/${ticketId}.png`);
-    const pdfPath = path.join(uploadDir, `${ticketId}.pdf`); // Nama PDF sama dengan barcode
+    const qrPath = path.join(__dirname, `../../file/qrcode/${urlTicket}.png`);
+    const pdfPath = path.join(uploadDir, `${urlTicket}.pdf`); 
 
     const doc = new PDFDocument({ size: "A4", margin: 50 });
     const stream = fs.createWriteStream(pdfPath);
     doc.pipe(stream);
-
-    // Header
+    
+   
     doc
-      .fontSize(20)
+      .fontSize(24)
+      .fillColor('blue') 
       .text("Chemicfest #9 - E-Ticket", { align: "center", underline: true })
-      .moveDown(2);
+      .moveDown(1);
+    
 
-    // Informasi Acara
-    doc.fontSize(14).text("Informasi Acara:", { bold: true }).moveDown(1);
-    doc.text("Nama Event: Chemicfest #9");
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    
+    
+    doc.fillColor('black') 
+      .fontSize(16)
+      .text("Informasi Acara:", { bold: true })
+      .moveDown(1);
+    doc.fontSize(12).text("Nama Event: Chemicfest #9");
     doc.text("Penyelenggara: OSIS SMK SMTI Yogyakarta");
     doc.text("Tanggal: 17 Mei 2025");
-    doc.text(
-      "Lokasi: GOR UMY, Jl. Brawijaya, Ngebel, Tamantirto, Kasihan, Bantul, Yogyakarta"
-    );
+    doc.text("Lokasi: GOR UMY, Jl. Brawijaya, Ngebel, Tamantirto, Kasihan, Bantul, Yogyakarta");
     doc.moveDown(2);
-
+    
+    // Garis pemisah
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    
     // Informasi Pemesan
-    doc.fontSize(14).text("Informasi Pemesan:", { bold: true }).moveDown(1);
-    doc.text(`Kode Pesanan: ${ticketId}`);
+    doc.fontSize(16).text("Informasi Pemesan:", { bold: true }).moveDown(1);
+    doc.fontSize(12).text(`Kode Pesanan: ${order_id}`);
     doc.text(`Nama Pemesan: ${user.email}`);
     doc.text(`Jumlah Tiket: ${quantity} Pax`);
     doc.text("Validitas: 17 Mei 2025");
     doc.moveDown(2);
-
+    
+    // Garis pemisah
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    
     // Harga
-    doc.fontSize(14).text("Total Harga: IDR 40.000", { bold: true });
+    doc.fontSize(16).text(`Total Harga: IDR ${amount}`, { bold: true });
     doc.moveDown(2);
-
+    
     // Tambah QR Code
     if (fs.existsSync(qrPath)) {
       doc.image(qrPath, {
@@ -310,16 +337,23 @@ async function generateEticket(transaction) {
         align: "center",
       });
     }
+    doc.moveDown(3); 
 
-    doc.text("Dibuat pada 17 Agustus 1945", { align: "center" });
-    doc.moveDown(2);
+// Tanggal pembuatan
+// doc.fontSize(12).text("Dibuat pada 17 Agustus 1945", { align: "center" });
+doc.moveDown(5); 
 
-    // Syarat & Ketentuan
-    doc.fontSize(14).text("Syarat & Ketentuan:", { bold: true }).moveDown(1);
-    doc.text("- Maks. pembelian 2 tiket per akun/ID per show day.");
-    doc.text("- Wajib login ke akun chemicfest9.site untuk melakukan pembelian.");
+// Garis pemisah
+doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+doc.moveDown(3); 
 
+// Syarat & Ketentuan
+doc.fontSize(16).text("Syarat & Ketentuan:", { bold: true }).moveDown(2);
+doc.fontSize(12).text("- Maks. pembelian 1 tiket per akun/ID per show day.");
+doc.text("- Wajib login ke akun chemicfest9.site untuk melakukan pembelian.");
+    
     doc.end();
+    
 
     console.log("✅ Email berhasil dikirim ke:", user.email);
 
@@ -328,12 +362,12 @@ async function generateEticket(transaction) {
     return new Promise((resolve) => {
       stream.on("finish", () => {
         console.log("✅ PDF selesai dibuat:", pdfPath);
-        resolve(true); // Mengembalikan `true` setelah PDF selesai dibuat
+        resolve(true); 
       });
     });
   } catch (error) {
     console.error("❌ Gagal mengirim email:", error);
-    return false; // ❌ Gagal, tiket tidak dibuat
+    return false; 
   }
 }
 

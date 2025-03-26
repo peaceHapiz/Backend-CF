@@ -7,7 +7,7 @@ const prisma = require("../../model/model");
 // Konfigurasi Midtrans
 const snap = new midtransClient.Snap({
   isProduction: false, 
-  serverKey: "SB-Mid-server-5ycn5sOjLN4v2SiNt0BCipcg",
+  serverKey: "Mid-server-ahXKr58ypEHFgnpe6c95jFTk",
 });
 
 router.post("/buy-ticket", async (req, res) => {
@@ -36,18 +36,21 @@ router.post("/buy-ticket", async (req, res) => {
 
 
     if (quantity < 1 || quantity > 2) {
-      return res.status(400).json({ message: "Maksimal pembelian tiket adalah 2" });
+      return res.status(400).json({ message: "Maksimal pembelian tiket adalah 1" });
     }
 
 
     const userTicketsCount = await prisma.ticket.count({ where: { userId } });
 
-    const kuantitas = parseInt(quantity, 10);
-    const jumlahTicket = userTicketsCount + kuantitas;
-    console.log(jumlahTicket);
-    if (jumlahTicket > 2) {
-      return res.status(400).json({ message: "Anda sudah memiliki tiket maksimal (2 tiket)" });
-    }
+
+
+if (userTicketsCount > 0) {
+  return res.status(400).json({ message: "Anda sudah memiliki tiket, tidak bisa membeli lagi" });
+}
+
+if (quantity > 1) {
+  return res.status(400).json({ message: "Maksimal pembelian tiket adalah 1" });
+}
 
     const productId = parseInt(product_Id, 10);
 

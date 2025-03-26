@@ -40,28 +40,44 @@ function generateRandomId(role, registrationDate) {
 
 async function sendEmail(email, name, otp) {
   try {
-    // let transporter = nodemailer.createTransport({
-    //   host: config.EmailOTP.ProductionEmail.service,
-    //   port: config.EmailOTP.ProductionEmail.port,
-    //   secure: config.EmailOTP.ProductionEmail.secure,
-    //   auth: {
-    //     user: config.EmailOTP.ProductionEmail.user,
-    //     pass: config.EmailOTP.ProductionEmail.pass,
-    //   },
-    // });
     let transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: config.EmailOTP.ProductionEmail.service,
+      port: config.EmailOTP.ProductionEmail.port,
+      secure: config.EmailOTP.ProductionEmail.secure,
       auth: {
-        user: "penjualkelpshake@gmail.com",
-        pass: "hizm cxcw fsiq smxr",
+        user: config.EmailOTP.ProductionEmail.user,
+        pass: config.EmailOTP.ProductionEmail.pass,
       },
-  });
+    });
+  //   let transporter = nodemailer.createTransport({
+  //     service: "gmail",
+  //     auth: {
+  //       user: "penjualkelpshake@gmail.com",
+  //       pass: "hizm cxcw fsiq smxr",
+  //     },
+  // });
 
     const mailOptions = {
       from: config.EmailOTP.ProductionEmail.user,
       to: email,
       subject: "Kode OTP Chemicfest#8",
-      text: `Halo ${name},\n\nKode OTP kamu adalah: ${otp}\nKode ini berlaku selama 5 menit.\n\nJangan bagikan kode ini kepada siapa pun.`,
+      html: `<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kode OTP Anda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-200 flex justify-center items-center min-h-screen">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
+      <h2 class="text-2xl font-bold text-orange-600">Kode OTP Anda</h2>
+      <p class="mt-2 text-gray-700">Gunakan kode berikut untuk verifikasi akun Anda: ${name}</p>
+      <h1 class="mt-4 text-4xl font-bold text-gray-900">${otp}</h1>
+      <p class="mt-2 text-sm text-gray-500">Kode ini berlaku selama 5 menit.</p>
+    </div>
+  </body>
+</html>`,
     };
 
     await transporter.sendMail(mailOptions);

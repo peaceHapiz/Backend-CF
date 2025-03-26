@@ -71,8 +71,9 @@ async function generateInvoice(transaction) {
   await sendInvoiceEmail(user.email, invoicePath, orderId);
 
   return new Promise((resolve, reject) => {
-    stream.on("finish", () => resolve(invoicePath));
+    stream.on("finish", () => resolve(true));
     stream.on("error", reject);
+
   });
 }
 
