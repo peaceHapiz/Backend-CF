@@ -12,11 +12,11 @@ const PDFDocument = require('pdfkit');
 const configPath = path.join(__dirname, '../../db/config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY;
+const MSK = process.env.MIDTRANS;
 const midtransAuth = {
   headers: {
     Authorization:
-      "Basic " + Buffer.from(MIDTRANS_SERVER_KEY + ":").toString("base64"),
+      "Basic " + Buffer.from(MSK + ":").toString("base64"),
   },
 };
 
