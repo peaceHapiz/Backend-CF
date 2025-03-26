@@ -2,25 +2,39 @@ const express = require('express');
 const prisma = require('../../model/model');
 const router = express.Router();
 const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
+
+// Load konfigurasi dari config.json
+const configPath = path.join(__dirname, '../../../db/config.json');
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 async function sendEmail(email) {
-  var transporter = nodemailer.createTransport({
-    host: 'mx5.mailspace.id',
-    port: 465,
-    secure: true,
-    auth: {
-      user: 'noreply@lockify.space',
-      pass: '@Sandiku197'
-    },
-    debug: true
-  });
+  // const transporter = nodemailer.createTransport({
+  //   host: config.EmailOTP.ProductionEmail.service,
+  //   port: config.EmailOTP.ProductionEmail.port,
+  //   secure: config.EmailOTP.ProductionEmail.secure,
+  //   auth: {
+  //     user: config.EmailOTP.ProductionEmail.user,
+  //     pass: config.EmailOTP.ProductionEmail.pass,
+  //   },
+  //   debug: true,
+  // });
 
-  var mailOptions = {
-    from: `noreply@chemicfest9.site`,
-    to: `${email}`,
+  let transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "penjualkelpshake@gmail.com",
+      pass: "hizm cxcw fsiq smxr",
+    },
+});
+  const mailOptions = {
+    from: config.EmailOTP.ProductionEmail.user,
+    to: email,
     subject: "Reset Password Chemicfest#8",
     html: `<p>Your password has been reset successfully.</p>`
   };
+
   return transporter.sendMail(mailOptions);
 }
 
@@ -52,47 +66,23 @@ router.post('/verify-forgot', async (req, res) => {
       return res.status(404).json({ code: 404, message: "User tidak ditemukan" });
     }
     
-    // Ambil forgot password terbaru untuk user ini
     const forgotData = await prisma.forgot.findFirst({
       where: { 
         userId: findUser.id, 
-        forgotStatus: true // Hanya ambil yang masih aktif
+        forgotStatus: true
       },
-      orderBy: { expiredTime: 'desc' }, // Urutkan berdasarkan waktu kadaluarsa terbaru
+      orderBy: { expiredTime: 'desc' },
     });
     
-    if (!forgotData) {
-      return res.status(400).json({ code: 400, message: "Token tidak ditemukan atau sudah kadaluarsa" });
-    }
-    
-    const code = forgotData.forgotCode;
-    
-    if (code !== parseInt(token)) {
-      return res.status(400).json({ code: 400, message: "Token salah" });
-    }
-    
-    if (forgotData.expiredTime < new Date()) {
-      return res.status(400).json({ code: 400, message: "Token telah kadaluarsa" });
-    }
-    
-    if (!forgotData.forgotStatus) {
-      return res.status(400).json({ code: 400, message: "Token telah digunakan" });
+    if (!forgotData || forgotData.forgotCode !== parseInt(token) || forgotData.expiredTime < new Date()) {
+      return res.status(400).json({ code: 400, message: "Token tidak valid atau kadaluarsa" });
     }
 
-    if (password.length < 8) {
-      return res.status(426).json({ code: 426, message: "Password must be at least 8 characters" });
-    }
-    if (!password.match(/[a-z]/g)) {
-      return res.status(427).json({ code: 427, message: "Password must contain at least one lowercase letter" });
-    }
-    if (!password.match(/[A-Z]/g)) {
-      return res.status(428).json({ code: 428, message: "Password must contain at least one uppercase letter" });
-    }
-    if (!password.match(/[0-9]/g)) {
-      return res.status(429).json({ code: 429, message: "Password must contain at least one number" });
+    if (password.length < 8 || !password.match(/[a-z]/g) || !password.match(/[A-Z]/g) || !password.match(/[0-9]/g)) {
+      return res.status(400).json({ code: 400, message: "Password tidak memenuhi syarat" });
     }
     if (password !== confirm_password) {
-      return res.status(400).json({ code: 430, message: "Confirm Password Not Match" });
+      return res.status(400).json({ code: 400, message: "Konfirmasi password tidak cocok" });
     }
 
     await prisma.user.update({

@@ -2,14 +2,16 @@ const express = require("express");
 const prisma = require("../../model/model");
 const router = express.Router();
 const nodemailer = require("nodemailer");
+const fs = require("fs");
+const path = require("path");
 const { Role } = require("@prisma/client");
 
-// Fungsi untuk membuat ID unik berdasarkan role dan tanggal pendaftaran
+const configPath = path.join(__dirname, "../../../db/config.json");
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+
 function generateRandomId(role, registrationDate) {
   let result = "";
   const characters = "1234567890";
-  const charactersLength = characters.length;
-
   const date = new Date(registrationDate);
   const formattedDate =
     date.getFullYear().toString() +
@@ -17,7 +19,7 @@ function generateRandomId(role, registrationDate) {
     String(date.getDate()).padStart(2, "0");
 
   for (let i = 0; i < 5; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
 
   if (result.startsWith("0")) {
@@ -36,61 +38,58 @@ function generateRandomId(role, registrationDate) {
   }
 }
 
-// Fungsi untuk mengirim email OTP
 async function sendEmail(email, name, otp) {
   try {
+    // let transporter = nodemailer.createTransport({
+    //   host: config.EmailOTP.ProductionEmail.service,
+    //   port: config.EmailOTP.ProductionEmail.port,
+    //   secure: config.EmailOTP.ProductionEmail.secure,
+    //   auth: {
+    //     user: config.EmailOTP.ProductionEmail.user,
+    //     pass: config.EmailOTP.ProductionEmail.pass,
+    //   },
+    // });
     let transporter = nodemailer.createTransport({
-      host: "mx5.mailspace.id",
-      port: 465,
-      secure: true,
+      service: "gmail",
       auth: {
-        user: "noreply@lockify.space",
-        pass: "@Sandiku197",
+        user: "penjualkelpshake@gmail.com",
+        pass: "hizm cxcw fsiq smxr",
       },
-    });
+  });
 
     const mailOptions = {
-      from: "noreply@lockify.space",
+      from: config.EmailOTP.ProductionEmail.user,
       to: email,
       subject: "Kode OTP Chemicfest#8",
       text: `Halo ${name},\n\nKode OTP kamu adalah: ${otp}\nKode ini berlaku selama 5 menit.\n\nJangan bagikan kode ini kepada siapa pun.`,
     };
 
     await transporter.sendMail(mailOptions);
+    console.log(`Email OTP berhasil dikirim ke ${email}`);
   } catch (error) {
     console.error("Gagal mengirim email:", error);
     throw new Error("Gagal mengirim OTP, coba lagi nanti");
   }
 }
 
-// Fungsi untuk membuat OTP
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Endpoint registrasi
 router.post("/register", async (req, res) => {
-  const { name, username, email, password, checkpassword, phoneNumber, role } =
-    req.body;
+  const { name, username, email, password, checkpassword, phoneNumber, role } = req.body;
 
-  // Validasi role
   if (!Object.values(Role).includes(role)) {
     return res.status(422).json({ code: 422, message: "Invalid role" });
   }
 
-  // Validasi input
   if (!name || !username || !email || !phoneNumber || !password || !checkpassword || !role) {
     return res.status(422).json({ code: 422, message: "Please fill all fields" });
   }
 
-  // Cek apakah email, username, atau phoneNumber sudah digunakan
   const existingUser = await prisma.user.findFirst({
     where: {
-      OR: [
-        { username: username },
-        { email: email },
-        { phoneNumber: phoneNumber },
-      ],
+      OR: [{ username }, { email }, { phoneNumber }],
     },
   });
 
@@ -98,19 +97,6 @@ router.post("/register", async (req, res) => {
     return res.status(420).json({ code: 420, message: "User already exists" });
   }
 
-  // Validasi password
-  if (password.length < 8) {
-    return res.status(426).json({ code: 426, message: "Password must be at least 8 characters" });
-  }
-  if (!password.match(/[a-z]/)) {
-    return res.status(427).json({ code: 427, message: "Password must contain at least one lowercase letter" });
-  }
-  if (!password.match(/[A-Z]/)) {
-    return res.status(428).json({ code: 428, message: "Password must contain at least one uppercase letter" });
-  }
-  if (!password.match(/[0-9]/)) {
-    return res.status(429).json({ code: 429, message: "Password must contain at least one number" });
-  }
   if (password !== checkpassword) {
     return res.status(430).json({ code: 430, message: "Passwords do not match" });
   }
@@ -121,23 +107,19 @@ router.post("/register", async (req, res) => {
 
   const now = new Date();
   const userId = generateRandomId(role, now);
-
-  const expiresOtp = new Date(now);
-  expiresOtp.setMinutes(now.getMinutes() + 5); 
-
   const otpCode = generateOTP();
+  const expiresOtp = new Date(now.getTime() + 5 * 60 * 1000);
 
   try {
- 
     const insertUser = await prisma.user.create({
       data: {
         id: userId,
-        name: name,
-        username: username,
-        email: email,
-        password: password, 
-        phoneNumber: phoneNumber,
-        role: role,
+        name,
+        username,
+        email,
+        password,
+        phoneNumber,
+        role,
         createdAt: now,
         verified: false,
         otp: {
@@ -145,18 +127,14 @@ router.post("/register", async (req, res) => {
             code: otpCode,
             expiresAt: expiresOtp,
             createdAt: now,
-            otpStatus: true
+            otpStatus: true,
           },
         },
       },
-      include: {
-        otp: true, 
-      },
+      include: { otp: true },
     });
 
-    // Kirim email OTP
     await sendEmail(insertUser.email, insertUser.name, otpCode);
-    console.log(`${otpCode}, ${insertUser.email}, ${insertUser.name}`);
     res.status(200).json({ code: 200, message: "Register successful and OTP sent", data: insertUser });
   } catch (error) {
     console.error("Error saat registrasi:", error);

@@ -1,4 +1,4 @@
-const prisma  = require('../../model/model')
+const prisma  = require('../../src/model/model')
 const express = require('express')
 const router = express.Router()
 

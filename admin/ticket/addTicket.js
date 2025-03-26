@@ -38,7 +38,7 @@ router.post('/add-ticket', async (req, res) => {
             newProductId = productId
         }
 
-        const findProduct = prisma.ticketOffline.findUnique({
+        const findProduct = await prisma.ticketOffline.findUnique({
             where : {
                 alias : alias
             }

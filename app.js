@@ -48,8 +48,10 @@ const deleteSponsor = require('./admin/sponsor/deleteSponsor')
 const updateTicket = require('./admin/ticket/updateTicket')
 const deleteTicket = require('./admin/ticket/deleteTicket')
 const addTicket = require('./admin/ticket/addTicket')
-const getAllTicket = require('./admin/ticket/get-all-ticket')
+const getTicketSucces = require('./admin/ticket/get-tiket-success')
 const manualScanned = require('./admin/ticket/manualScanned.js')
+const getAllTicket = require('./admin/ticket/get-all-ticket.js')
+const changeStatus = require('./admin/ticket/activeAndDeactiveTicket.js')
 
 //Request Data
 const getExcel = require('./admin/requestData/excelTicket.js')
@@ -127,8 +129,10 @@ app.use('/api/admin/tiket', addTicket)
 app.use('/api/admin/tiket', updateTicket)
 app.use('/api/admin/tiket', deleteTicket)
 app.use('/api/admin/tiket', getExcel)
-app.use('/api/admin/tiket', getAllTicket)
+app.use('/api/admin/tiket', getTicketSucces)
 app.use('/api/admin/tiket', manualScanned)
+app.use('/api/admin/tiket', getAllTicket)
+app.use('/api/admin/tiket', changeStatus)
 
 
 //User Routes
@@ -146,6 +150,7 @@ app.use('/api', buyTicket)
 app.use('/api', checkTicket)
 app.use('/api', getTicket)
 app.use('/api', downloadInvoice)
+// app.use('/', midtransWebHook)
 
 
 //------------------------Server-----------------------//

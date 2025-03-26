@@ -2,27 +2,30 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("../../model/model");
 const nodemailer = require("nodemailer");
+const fs = require("fs");
+const path = require("path");
 
-// Fungsi untuk membuat OTP
+const configPath = path.join(__dirname, "../../../db/config.json");
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Fungsi untuk mengirim OTP via email
 async function sendEmail(email, name, otp) {
   try {
     let transporter = nodemailer.createTransport({
-      host: "mx5.mailspace.id",
-      port: 465,
-      secure: true,
+      host: config.EmailOTP.ProductionEmail.service,
+      port: config.EmailOTP.ProductionEmail.port,
+      secure: config.EmailOTP.ProductionEmail.secure,
       auth: {
-        user: "noreply@lockify.space",
-        pass: "@Sandiku197",
+        user: config.EmailOTP.ProductionEmail.user,
+        pass: config.EmailOTP.ProductionEmail.pass,
       },
     });
 
     const mailOptions = {
-      from: "noreply@lockify.space",
+      from: config.EmailOTP.ProductionEmail.user,
       to: email,
       subject: "Kode OTP Chemicfest#8",
       text: `Halo ${name},\n\nKode OTP kamu adalah: ${otp}\nKode ini berlaku selama 5 menit.\n\nJangan bagikan kode ini kepada siapa pun.`,
@@ -35,7 +38,6 @@ async function sendEmail(email, name, otp) {
   }
 }
 
-// Endpoint untuk request OTP
 router.post("/validation/getotp", async (req, res) => {
   const { users } = req.body;
 
@@ -53,7 +55,6 @@ router.post("/validation/getotp", async (req, res) => {
   }
 
   try {
-
     const user = await prisma.user.findFirst({
       where: { [method]: users },
     });
@@ -62,16 +63,10 @@ router.post("/validation/getotp", async (req, res) => {
       return res.status(404).json({ code: 404, message: "User tidak ditemukan" });
     }
 
-    // Hapus OTP yang sudah expired
-    await prisma.oTP.deleteMany({
-      where: { userId: user.id },
-    });
+    await prisma.oTP.deleteMany({ where: { userId: user.id } });
 
-  
-
-  
     const otpCode = generateOTP();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     await sendEmail(user.email, user.name, otpCode);
 
@@ -80,11 +75,9 @@ router.post("/validation/getotp", async (req, res) => {
         userId: user.id,
         code: otpCode,
         expiresAt,
-        otpStatus: true
+        otpStatus: true,
       },
     });
-
-
 
     res.status(200).json({ code: 200, message: "OTP berhasil dikirim" });
   } catch (error) {

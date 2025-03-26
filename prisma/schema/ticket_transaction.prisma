@@ -3,6 +3,7 @@ model TicketTransaction {
   userId          String
   paymentId       String?   @unique
   paymentStatus   String    @default("pending")
+  checked   Boolean @default(false)
   productId     Int
   createdAt       DateTime  @default(now())
   

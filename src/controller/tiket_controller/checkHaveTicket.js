@@ -18,7 +18,8 @@ router.post('/have-ticket', async (req, res) => {
           include: {
             urlTicket: true 
           }
-        }
+        },
+        payment : true
       }
     });
 

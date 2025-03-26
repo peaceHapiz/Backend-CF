@@ -1,48 +1,20 @@
-const express = require('express')
-const app = express()
-const router = express.Router()
-const prisma  = require('../../src/model/model')
+const express = require('express');
+const router = express.Router();
+const prisma = require('../../src/model/model')
 
-router.get('/get-all-ticket', async(req,res) => {
+
+
+router.get('/get-all', async(req,res) => {
     try {
-        //ambil semua tiket yang sudah dibeli
-        const getTiket = await prisma.ticketTransaction.findMany({
-            where : {
-                paymentStatus : "successful",
-            },
-            include: {
-                user: {
-                    select : {
-                        username : true,
-                        id : true,
-                        email: true,
-                        name : true
-                    }
-                },
-                tickets: {
-                    select : {
-                        bookingCode : true,
-                        passCode : true,
-                        scanned : true,
-                        urlTicket : {
-                            select : {
-                                barcode : true,
-                                eTicket : true,
-                                qrcode : true,
-                                ticketId : true
-                        }
-                    }
-                },
-                
-            }
-        }})
+        const data = await prisma.ticketOffline.findMany()
 
-        
-
-        res.status(200).json({code : 200, message: 'Success', data: getTiket})
+        res.status(200).json({
+            code : 200,
+            message : "Data ditemukan",
+            data : data
+        })
     } catch (error) {
         console.log(error.message)
-        res.status(500).json({code : 500, message: 'Internal server error', error : error.message})
     }
 })
 
