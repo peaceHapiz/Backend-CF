@@ -106,7 +106,7 @@ async function midtransWebHook() {
         
         await prisma.payment.update({
           where: { id: transaction.payment.id },
-          data: { status: "failed" },
+          data: { status: "failed" },A
         });
 
         updatedTransactions.push({ orderId, status: "failed" });

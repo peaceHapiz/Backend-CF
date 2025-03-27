@@ -3,6 +3,7 @@ enum Role{
     guru
     pelajar
     mahasiswa
+    umum
 }
 
 model User {
