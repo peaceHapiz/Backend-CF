@@ -38,6 +38,7 @@ const myIpPrivate = IpPrivate.address();
 //User Action
 const getAllUser = require("./admin/user/getAllUser")
 const changeToAdmin = require('./admin/user/changeToAdmin')
+const secondVerified = require('./admin/user/second_verified')
 
 //Sponsor Action
 const addSponsor = require('./admin/sponsor/addSponsor')
@@ -65,6 +66,8 @@ const getOtp = require('./src/controller/validation/getOtpController')
 const verifyOtp = require('./src/controller/validation/verifyOtpController')
 const requestForgotPassword = require('./src/controller/user_controller/requestForgotPassword.js')
 const verifyForgotPassword = require('./src/controller/user_controller/verifyForgotPassword.js')
+const sendDocument = require('./src/controller/validation/send_dokumen.js')
+const allRequestVerified = require('./src/controller/validation/request_add_verified.js')
 
 //Ticket Controller
 const buyTicket = require('./src/controller/tiket_controller/buyTicket')
@@ -79,7 +82,8 @@ const downloadInvoice = require('./src/controller/tiket_controller/dowload-invoi
 const midtransWebHook = require('./src/function/midtransWebhook.js')
 const sessionWacther = require('./src/function/sessionWatcher')
 const otpWatcher = require('./src/function/otpWatcher')
-const forgotPassword = require('./src/function//forgotPassword.js')
+const forgotPassword = require('./src/function//forgotPassword.js');
+const { send } = require('process');
 
 
 //cronjob
@@ -133,6 +137,7 @@ app.use('/api/admin/tiket', getTicketSucces)
 app.use('/api/admin/tiket', manualScanned)
 app.use('/api/admin/tiket', getAllTicket)
 app.use('/api/admin/tiket', changeStatus)
+app.use('/api/admin/user', secondVerified)
 
 
 //User Routes
@@ -144,6 +149,8 @@ app.use('/api', manualVerif)
 app.use('/api', verifyOtp)
 app.use('/api', requestForgotPassword)
 app.use('/api', verifyForgotPassword)
+app.use('/api', sendDocument)
+app.use('/api', allRequestVerified)
 
 //Ticket Routes
 app.use('/api', buyTicket)

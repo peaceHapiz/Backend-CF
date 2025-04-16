@@ -1,0 +1,10 @@
+yang ditambahkan 
+- ticket_for		--> kolom di tabel ticketOffline
+- add_verified		--> verifikasi tambahan untuk keluarga siswa dan alumni
+- penambahan role 
+- /api/admin/user/second-verified --> untuk mengubah add_verified di database  setelah dicek dokumennya
+- /api/add-verified	--> menyajikan data semua file verified
+- /api/send-dokumen	--> menambahkan file untuk diverifikasi
+- update utnuk /api/get-ticket --> sekarang harus memasukkan rolenya , nanti yang muncul tiketnya adalah sesuai dengan rolenya, jika
+ rolenya guru, nanti harganya ngikuti itu
+- tiket typenya itu ada {Eksternal, Internal, Guru, Alumni, Keluarga_Siswa} , nanti kamu ubah bagian add ticket , dia butuh tambahan itu

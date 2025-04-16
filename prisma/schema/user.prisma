@@ -3,6 +3,8 @@ enum Role{
     guru
     pelajar
     mahasiswa
+    keluarga_siswa
+    alumni
 }
 
 model User {
@@ -13,8 +15,10 @@ model User {
   password     String
   phoneNumber  String?         @unique
   role          Role          
+
   createdAt    DateTime        @default(now())
   verified    Boolean   @default(false)
+  add_verified  Boolean @default(false)
   ticketTransaction TicketTransaction[]
 
   sessions     Session[]

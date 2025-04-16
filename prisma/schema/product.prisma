@@ -1,3 +1,10 @@
+enum Type { 
+  Eksternal
+  Internal
+  Guru
+  Keluarga_Siswa
+  Alumni
+}
 
 model TicketOffline {
   id          Int      @id @default(autoincrement())
@@ -6,6 +13,9 @@ model TicketOffline {
   alias       String   @unique
   name        String
   price       Int
+
+
+  ticket_type    Type @default(Eksternal)
   unit        String   @default("IDR")
   unitName    String   @default("Rupiah")
   unitSymbol  String   @default("Rp")

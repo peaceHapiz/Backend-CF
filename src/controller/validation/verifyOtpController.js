@@ -55,25 +55,60 @@ router.post("/validation/verifyotp", async (req, res) => {
   
       // Tandai OTP sebagai sudah digunakan
 
-      const userUpdate = await prisma.user.update({
-        where: { id: user.id },
-        data: { verified: true },
-      });
-
-      const otpUpdate = await prisma.oTP.update({
-        where: { id: otpRecord.id },
-        data: { otpStatus: false },
-      });
+      if(user.role === "keluarga_siswa" || user.role === "alumni"){
+        const userUpdate = await prisma.user.update({
+          where: { id: user.id },
+          data: { 
+            verified: true,
+            add_verified : false
+          },
+        });
   
-      res.status(200).json({
-        code: 200,
-        message: "OTP berhasil diverifikasi",
-        data : {
-          username : userUpdate.username,
-          verified : userUpdate.verified,
-          otpStatus : otpUpdate.otpStatus
-        }
-      });
+        const otpUpdate = await prisma.oTP.update({
+          where: { id: otpRecord.id },
+          data: { otpStatus: false },
+        });
+
+        res.status(200).json({
+          code: 200,
+          message: "OTP berhasil diverifikasi",
+          data : {
+            username : userUpdate.username,
+            verified : userUpdate.verified,
+            add_verified : userUpdate.add_verified,
+            otpStatus : otpUpdate.otpStatus
+          }
+        });
+        
+      }else {
+        const userUpdate = await prisma.user.update({
+          where: { id: user.id },
+          data: { 
+            verified: true,
+            add_verified : true
+          },
+        });
+  
+        const otpUpdate = await prisma.oTP.update({
+          where: { id: otpRecord.id },
+          data: { otpStatus: false },
+        });
+
+        res.status(200).json({
+          code: 200,
+          message: "OTP berhasil diverifikasi",
+          data : {
+            username : userUpdate.username,
+            verified : userUpdate.verified,
+            add_verified : userUpdate.add_verified,
+            otpStatus : otpUpdate.otpStatus
+          }
+        });
+      }
+
+      
+  
+      
     } catch (error) {
       console.error(error);
       res.status(500).json({ code: 500, message: "Terjadi kesalahan server" });

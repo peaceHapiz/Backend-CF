@@ -23,11 +23,24 @@ async function generateProductId() {
 
 
 router.post('/add-ticket', async (req, res) => {
-    const {alias, name, price, productId} = req.body
+    const {alias, name, price, productId, ticket_type} = req.body
 
     try {
-        if(!alias || !name || !price){
-            return res.status(500).json({code : 500, message : "Invalid Input"})
+        if(!alias  ){
+            return res.status(500).json({code : 500, message : "❌ Alias tidak boleh kosong"})
+
+        }
+
+        if(!name){
+            return res.status(500).json({code : 500, message : "❌ Nama tidak boleh kosong"})
+        }   
+
+        if(!price){
+            return res.status(500).json({code : 500, message : "❌ Harga tidak boleh kosong"})
+        }
+
+        if(!ticket_for){
+            return res.status(500).json({code : 500, message : "❌ Role tidak boleh kosong"})
         }
         
         let newProductId = 0
@@ -55,6 +68,7 @@ router.post('/add-ticket', async (req, res) => {
                 alias : alias,
                 name : name,
                 price : price,
+                ticket_type : ticket_type
             }
         })
 

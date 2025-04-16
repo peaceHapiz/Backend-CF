@@ -39,6 +39,10 @@ router.post("/buy-ticket", async (req, res) => {
       return res.status(400).json({ message: "Maksimal pembelian tiket adalah 1" });
     }
 
+    if(user.add_verified === false){
+      return res.status(400).json({ message: "Anda belum diverifikasi sekunder, silahkan verifikasi terlebih dahulu" });
+    }
+
 
     const userTicketsCount = await prisma.ticket.count({ where: { userId } });
 
@@ -97,12 +101,18 @@ if (quantity > 1) {
     const parameter = {
       transaction_details: {
         order_id: payment.orderId,
-        gross_amount: totalAmount,
+        gross_amount: totalAmount, 
       },
       customer_details: {
-        user_id: userId,
+        first_name: user.name || "User",
+        email: user.email,
+        phone: user.phoneNumber, 
       },
+      custom_fields: {
+        user_id: userId.toString(), 
+      }
     };
+    
 
     const midtransResponse = await snap.createTransaction(parameter);
     const token = await snap.createTransactionToken(parameter)
