@@ -33,6 +33,10 @@ function generateRandomId(role, registrationDate) {
       return `G-${formattedDate}-${result}`;
     case "mahasiswa":
       return `M-${formattedDate}-${result}`;
+    case "umum":
+      return `U-${formattedDate}-${result}`;
+    case "admin":
+      return `A-${formattedDate}-${result}`;
     default:
       throw new Error("Role tidak valid");
   }
