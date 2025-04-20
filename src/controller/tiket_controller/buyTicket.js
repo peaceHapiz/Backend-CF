@@ -7,7 +7,7 @@ const prisma = require("../../model/model");
 // Konfigurasi Midtrans
 const snap = new midtransClient.Snap({
   isProduction: false, 
-  serverKey: process.env.MIDTRANS,
+  serverKey: `SB-Mid-server-5ycn5sOjLN4v2SiNt0BCipcg`,
 });
 
 router.post("/buy-ticket", async (req, res) => {

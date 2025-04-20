@@ -1,63 +1,59 @@
 const express = require("express");
 const router = express.Router();
-const prisma = require("../../model/model");
 const fs = require("fs");
 const path = require("path");
+const prisma = require("../../model/model");
 
-router.get("/add-verified", async (req, res) => {
+router.get("/all-request", async (req, res) => {
   try {
-    const basePath = path.join(__dirname, "..", "..",  "..", "file", "verifikasi_dokumen");
+    const basePath = path.join(__dirname, "../../../file/verifikasi_dokumen");
 
-    // Pastikan direktori utama ada
     if (!fs.existsSync(basePath)) {
-      return res.json({ data: [], message: "Belum ada dokumen terkirim" });
+      return res.json({ data: [], message: "Belum ada file" });
     }
-
-    // Ambil semua folder user (hanya angka, ID peserta)
-    const userFolders = fs.readdirSync(basePath).filter(folder => {
-      const fullPath = path.join(basePath, folder);
-      return fs.statSync(fullPath).isDirectory() && /^\d+$/.test(folder);
-    });
 
     const result = [];
+    const folders = fs.readdirSync(basePath);
 
-    for (const folder of userFolders) {
-      const userId = folder.toString();
-      if (isNaN(userId)) continue;
+    for (const folder of folders) {
+      const folderPath = path.join(basePath, folder);
+      if (!fs.statSync(folderPath).isDirectory()) continue;
 
-      // Cari data user
-      const user = await prisma.user.findFirst({
-        where: { id: userId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          verified: true
-        }
-      });
+      const files = fs.readdirSync(folderPath);
 
-      if (!user) continue;
+      const processedFiles = await Promise.all(files.map(async (file) => {
+        const fullPath = path.join(folderPath, file);
+        if (!fs.statSync(fullPath).isFile()) return null;
 
-      const filePath = path.join(basePath, folder);
-      const files = fs.readdirSync(filePath)
-        .filter(file => fs.statSync(path.join(filePath, file)).isFile())
-        .map(file => ({
-          name: file,
-          url: `/file/verifikasi_dokumen/${folder}/${file}`
-        }));
+    
+        const match = file.match(/([a-zA-Z0-9._%+-]+)_gmail_com/i);
+        const email = match ? match[1].replace(/_/g, "@") + "@gmail.com" : null;
 
-      if (files.length === 0) continue;
+        if (!email) return null;
 
-      result.push({
-        user,
-        files
-      });
+        const user = await prisma.user.findUnique({
+          where: { email },
+          select: { add_verified: true },
+        });
+
+        return {
+          userId: folder,
+          email,
+          path: fullPath,
+          status: Boolean(user?.add_verified),
+        };
+      }));
+
+      result.push(...processedFiles.filter(Boolean));
     }
 
-    res.json({ data: result });
+    return res.json({ data: result });
   } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({ error: "Internal server error", detail: error.message });
+    console.error("Error reading files:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      detail: error.message,
+    });
   }
 });
 

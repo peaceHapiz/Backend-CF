@@ -25,6 +25,7 @@ function generateRandomId(role, registrationDate) {
   if (result.startsWith("0")) {
     result = result.replace("0", "1");
   }
+  console.log(role)
 
   switch (role.toLowerCase()) {
     case "pelajar":
@@ -37,6 +38,10 @@ function generateRandomId(role, registrationDate) {
       return `U-${formattedDate}-${result}`;
     case "admin":
       return `A-${formattedDate}-${result}`;
+    case "alumni":
+      return `X-${formattedDate}-${result}`;
+    case "keluarga_siswa":
+      return `K-${formattedDate}-${result}`;
     default:
       throw new Error("Role tidak valid");
   }

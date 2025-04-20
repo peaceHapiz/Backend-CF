@@ -1,6 +1,6 @@
 const express = require('express');
 const prisma = require('../../model/model');
-const { Role } = require('@prisma/client');
+
 const router = express.Router();
 
 router.post('/get-ticket', async (req, res) => {
@@ -17,7 +17,7 @@ router.post('/get-ticket', async (req, res) => {
     if (!role || !validRoles.includes(role)) {
         return res.status(400).json({
             code: 400,
-            message: "Role tidak valid. Harus salah satu dari: siswa, guru, umum"
+            message: "Role tidak valid."
         });
     }
 
@@ -25,13 +25,15 @@ router.post('/get-ticket', async (req, res) => {
 
     if(role == "mahasiswa" || role == "pelajar") {
 
-        var userRole = "Eksternal";
+        var userRole = "eksternal";
     }else if(role == "alumni"){
-        var userRole = "Alumni";
+        var userRole = "alumni";
     }else if(role == "keluarga_siswa"){
-        var userRole = "Keluarga_Siswa";
+        var userRole = "keluarga_Siswa";
+    }else if(role == "guru"){
+        var userRole = "guru";
     }else{
-        var userRole = "Internal";
+        var userRole = "internal";
     }
 
 

@@ -12,7 +12,7 @@ const PDFDocument = require('pdfkit');
 const configPath = path.join(__dirname, '../../db/config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-const MSK = process.env.MIDTRANS;
+const MSK = `SB-Mid-server-5ycn5sOjLN4v2SiNt0BCipcg`;
 const midtransAuth = {
   headers: {
     Authorization:
@@ -67,7 +67,7 @@ async function midtransWebHook() {
       }
       
       const response = await axios.get(
-        `https://api.midtrans.com/v2/${orderId}/status`,
+        `https://api.sandbox.midtrans.com/v2/${orderId}/status`,
         midtransAuth
       );
       

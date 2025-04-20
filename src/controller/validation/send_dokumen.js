@@ -5,55 +5,48 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 
-// Storage config (dynamic filename & path)
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    const userId = req.body.userId;
-    const dir = path.join(__dirname, "../../../file/verifikasi_dokumen", userId.toString());
-
-    // Create dir if not exists
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: async (req, file, cb) => {
-    const userId = req.body.userId;
-
-    // Ambil email dari database
-    const user = await prisma.user.findUnique({
-      where: { id: userId.toString() },
-    });
-
-    if (!user) return cb(new Error("User not found"));
-
-    const email = user.email.replace(/[^a-zA-Z0-9]/g, "_"); // amanin karakter
-    const dir = path.join(__dirname, "../../../file/verifikasi_dokumen", userId.toString());
-
-    // Hitung jumlah file yang sudah ada
-    const files = fs.readdirSync(dir).filter(f => f.startsWith(`${userId}-${email}`));
-    const nextNumber = files.length + 1;
-
-    const ext = path.extname(file.originalname);
-    const filename = `${userId}-${email}-${nextNumber}${ext}`;
-    cb(null, filename);
-  }
-});
-
-const upload = multer({ storage });
+// Simpan sementara dulu di folder `temp`
+const upload = multer({ dest: "temp/" });
 
 router.post("/send-dokumen", upload.single("dokumen"), async (req, res) => {
   try {
+    const userId = req.body.userId;
+    if (!userId) return res.status(400).json({ message: "userId is required" });
+
     const file = req.file;
     if (!file) return res.status(400).json({ message: "No file uploaded" });
 
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId.toString() },
+    });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const email = user.email.replace(/[^a-zA-Z0-9]/g, "_");
+
+    const userDir = path.join(__dirname, "../../../file/verifikasi_dokumen", userId.toString());
+    fs.mkdirSync(userDir, { recursive: true });
+
+    const existingFiles = fs.readdirSync(userDir).filter(f => f.startsWith(`${userId}-${email}`));
+    const nextNumber = existingFiles.length + 1;
+
+    const ext = path.extname(file.originalname);
+    const newFilename = `${email}-${nextNumber}${ext}`;
+    const newPath = path.join(userDir, newFilename);
+
+
+    fs.renameSync(file.path, newPath);
+
     res.json({
       message: "File uploaded successfully",
-      filename: file.filename,
-      path: file.path
+      filename: newFilename,
+      path: newPath
     });
   } catch (error) {
     console.error("Upload error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 });
+
 
 module.exports = router;

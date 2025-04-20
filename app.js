@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const axios = require('axios');
 const cronjob  = require('node-cron')
+const path = require('path')
 const IpPublic = 'https://icanhazip.com/';
 
 
@@ -53,6 +54,7 @@ const getTicketSucces = require('./admin/ticket/get-tiket-success')
 const manualScanned = require('./admin/ticket/manualScanned.js')
 const getAllTicket = require('./admin/ticket/get-all-ticket.js')
 const changeStatus = require('./admin/ticket/activeAndDeactiveTicket.js')
+const makeTicket = require('./admin/internal/make_ticket.js')
 
 //Request Data
 const getExcel = require('./admin/requestData/excelTicket.js')
@@ -68,6 +70,7 @@ const requestForgotPassword = require('./src/controller/user_controller/requestF
 const verifyForgotPassword = require('./src/controller/user_controller/verifyForgotPassword.js')
 const sendDocument = require('./src/controller/validation/send_dokumen.js')
 const allRequestVerified = require('./src/controller/validation/request_add_verified.js')
+const seeDokumen = require('./src/controller/validation/see_dokumen.js')
 
 //Ticket Controller
 const buyTicket = require('./src/controller/tiket_controller/buyTicket')
@@ -137,6 +140,7 @@ app.use('/api/admin/tiket', getTicketSucces)
 app.use('/api/admin/tiket', manualScanned)
 app.use('/api/admin/tiket', getAllTicket)
 app.use('/api/admin/tiket', changeStatus)
+app.use('/api/admin/tiket', makeTicket)
 app.use('/api/admin/user', secondVerified)
 
 
@@ -151,6 +155,7 @@ app.use('/api', requestForgotPassword)
 app.use('/api', verifyForgotPassword)
 app.use('/api', sendDocument)
 app.use('/api', allRequestVerified)
+app.use('/api', seeDokumen)
 
 //Ticket Routes
 app.use('/api', buyTicket)
@@ -158,6 +163,8 @@ app.use('/api', checkTicket)
 app.use('/api', getTicket)
 app.use('/api', downloadInvoice)
 // app.use('/', midtransWebHook)
+
+
 
 
 //------------------------Server-----------------------//

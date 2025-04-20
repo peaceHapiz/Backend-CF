@@ -2,17 +2,30 @@ const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
+const prisma  = require('../../src/model/model')
 
 
 
-async function generateInvoice(transaction) {
-  const user = transaction.user;
-  const orderId = transaction.payment.orderId;
-  const invoiceDir = path.join(__dirname, "../../../file/invoice");
+
+async function generateInvoice(user, orderId) {
+  
+  const invoiceDir = path.join(__dirname, "../../file/invoice");
 
   if (!fs.existsSync(invoiceDir)) {
     fs.mkdirSync(invoiceDir, { recursive: true });
   }
+
+  const ticket = await prisma.ticket.findFirst({
+    where : {
+        userId : user.id
+    }
+  })
+
+  const ticketInfo = await prisma.ticketOffline.findUnique({
+    where : {
+        productId : ticket.productId
+    }
+  })
 
   const invoicePath = path.join(invoiceDir, `${orderId}.pdf`);
   const doc = new PDFDocument({ margin: 50 });
@@ -46,19 +59,19 @@ async function generateInvoice(transaction) {
   doc.moveDown(0.5);
   doc.fontSize(12).font("Helvetica");
   
-  transaction.tickets.forEach((ticket, index) => {
-    doc.text(`${index + 1}. ${ticket.type} - Booking Code: ${ticket.bookingCode}`);
+
+    doc.text(`${ticket.type} - Booking Code: ${ticket.bookingCode}`);
     doc.text(`   Venue: ${ticket.venue} | Passcode: ${ticket.passCode}`);
     doc.moveDown(0.5);
-  });
+
 
   // Payment Summary
   doc.moveDown();
   doc.fontSize(14).font("Helvetica-Bold").text("Ringkasan Pembayaran:");
   doc.fontSize(12).font("Helvetica");
   doc.text(`Metode Pembayaran: Midtrans`);
-  doc.text(`Total Pembayaran: Rp ${transaction.payment.amount.toLocaleString()}`);
-  doc.text(`Status: ${transaction.payment.status}`);
+  doc.text(`Total Pembayaran: Rp ${ticketInfo.price}`);
+  doc.text(`Status: Success`);
   doc.moveDown();
 
   // Footer
@@ -70,10 +83,17 @@ async function generateInvoice(transaction) {
 
   await sendInvoiceEmail(user.email, invoicePath, orderId);
 
-  return new Promise((resolve, reject) => {
-    stream.on("finish", () => resolve(true));
-    stream.on("error", reject);
-
+  return new Promise((resolve) => {
+    stream.on("finish", () => {
+      console.log("✅ PDF selesai dibuat:", pdfPath);
+      resolve(true); 
+    });
+  
+    // fallback jika tidak selesai dalam 10 detik
+    setTimeout(() => {
+      console.warn("⚠️ PDF timeout, resolve paksa.");
+      resolve(false);
+    }, 10000);
   });
 }
 
